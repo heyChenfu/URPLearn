@@ -125,6 +125,13 @@ namespace BatchRendererGroupTest
             {
                 _jobHandle.Complete();
                 _isJobSchedule = false;
+
+                // 更新 GraphicsBuffer 数据
+                uint byteAddressObjectToWorld = kSizeOfPackedMatrix * 2;
+                uint byteAddressWorldToObject = byteAddressObjectToWorld + kSizeOfPackedMatrix * (uint)TestAmount;
+                _GPUPersistentInstanceData.SetData(_obj2WorldArr, 0, (int)(byteAddressObjectToWorld / kSizeOfPackedMatrix), _obj2WorldArr.Length);
+                _GPUPersistentInstanceData.SetData(_world2ObjArr, 0, (int)(byteAddressWorldToObject / kSizeOfPackedMatrix), _world2ObjArr.Length);
+
                 //for (int i = 0; i < TestAmount; ++i)
                 //{
                 //    _objArray[i].transform.position = _matrices[i].GetColumn(3);
@@ -138,11 +145,12 @@ namespace BatchRendererGroupTest
                 //}
             }
 
+
         }
 
         private void OnDestroy()
         {
-            _GPUPersistentInstanceData.Dispose();
+            _GPUPersistentInstanceData?.Dispose();
             if (_jobHandle != null)
                 _jobHandle.Complete();
             _targetPoints.Dispose();
@@ -244,11 +252,6 @@ namespace BatchRendererGroupTest
             // Place a zero matrix at the start of the instance data buffer, so loads from address 0 return zero.
             var zero = new Matrix4x4[1] { Matrix4x4.zero };
 
-            NativeArray<PackedMatrix> tmpObj2WorldArr = new NativeArray<PackedMatrix>(TestAmount, Allocator.Temp);
-            NativeArray<PackedMatrix> tmpWorld2ObjArr = new NativeArray<PackedMatrix>(TestAmount, Allocator.Temp);
-            tmpObj2WorldArr.CopyFrom(_obj2WorldArr);
-            tmpWorld2ObjArr.CopyFrom(_world2ObjArr);
-
             // Calculates start addresses for the different instanced properties. unity_ObjectToWorld starts
             // at address 96 instead of 64, because the computeBufferStartIndex parameter of SetData
             // is expressed as source array elements, so it is easier to work in multiples of sizeof(PackedMatrix).
@@ -259,9 +262,9 @@ namespace BatchRendererGroupTest
 
             //zero 矩阵上传到开始的64字节
             _GPUPersistentInstanceData.SetData(zero, 0, 0, 1);
-            //objectToWorld从GraphicsBuffer的第2个PackedMatrix位置开始上传即96字节处
-            _GPUPersistentInstanceData.SetData(tmpObj2WorldArr, 0, (int)(byteAddressObjectToWorld / kSizeOfPackedMatrix), tmpObj2WorldArr.Length);
-            _GPUPersistentInstanceData.SetData(tmpWorld2ObjArr, 0, (int)(byteAddressWorldToObject / kSizeOfPackedMatrix), tmpWorld2ObjArr.Length);
+            //把tmpObj2WorldArr从第0开始总共tmpObj2WorldArr.Length个元素传输到GraphicsBuffer的byteAddressObjectToWorld / kSizeOfPackedMatrix即第二个位置
+            _GPUPersistentInstanceData.SetData(_obj2WorldArr, 0, (int)(byteAddressObjectToWorld / kSizeOfPackedMatrix), _obj2WorldArr.Length);
+            _GPUPersistentInstanceData.SetData(_world2ObjArr, 0, (int)(byteAddressWorldToObject / kSizeOfPackedMatrix), _world2ObjArr.Length);
 
             // Set up metadata values to point to the instance data. Set the most significant bit 0x80000000 in each
             // which instructs the shader that the data is an array with one value per instance, indexed by the instance index.

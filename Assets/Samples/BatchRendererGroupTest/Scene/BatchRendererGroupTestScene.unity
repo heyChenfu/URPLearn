@@ -152,8 +152,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 163fdcd7b7eb0e34184d2176ae9a0fab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ObjMesh: {fileID: 4300362, guid: f88c8301226fd194cbbc64e25b20d567, type: 3}
-  ObjMaterial: {fileID: 2100000, guid: 2d05a111c7c75634ea00df5687724944, type: 2}
+  ObjMesh: {fileID: 4300004, guid: d9a1483b77bf10e4e851678ab6c2e54e, type: 3}
+  ObjMaterial: {fileID: 2100000, guid: daa4c5b5dfe6e6e429bf0eedeb27b08b, type: 2}
   TestAmount: 2
   RandomPostionRange:
     x: 0

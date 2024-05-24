@@ -36,9 +36,13 @@ namespace BatchRendererGroupTest
             var mat = Matrices[index];
             mat.SetTRS(curPos, Quaternion.LookRotation(dir), Vector3.one);
             Matrices[index] = mat;
-            Obj2WorldArr[index].SetData(mat);
-            World2ObjArr[index].SetData(mat.inverse);
 
+            PackedMatrix ow = Obj2WorldArr[index];
+            ow.SetData(mat);
+            Obj2WorldArr[index] = ow;
+            PackedMatrix wo = World2ObjArr[index];
+            wo.SetData(mat.inverse);
+            World2ObjArr[index] = wo;
 
         }
 
