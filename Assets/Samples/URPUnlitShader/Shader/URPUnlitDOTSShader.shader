@@ -69,11 +69,11 @@ Shader "Learn/URPUnlitDOTSShader"
 
             #ifdef DOTS_INSTANCING_ON
 
-                UNITY_DOTS_INSTANCING_START(MaterialPropertyMetadata)
-                    UNITY_DOTS_INSTANCED_PROP(float, _StaticGrassHeight)
-                UNITY_DOTS_INSTANCING_END(MaterialPropertyMetadata)
+                // UNITY_DOTS_INSTANCING_START(MaterialPropertyMetadata)
+                //     UNITY_DOTS_INSTANCED_PROP(float, _StaticGrassHeight)
+                // UNITY_DOTS_INSTANCING_END(MaterialPropertyMetadata)
 
-                #define _StaticGrassHeight UNITY_ACCESS_DOTS_INSTANCED_PROP_WITH_DEFAULT(float, _StaticGrassHeight)
+                // #define _StaticGrassHeight UNITY_ACCESS_DOTS_INSTANCED_PROP_WITH_DEFAULT(float, _StaticGrassHeight)
 
             #endif
 

@@ -25,13 +25,12 @@ public class AnimMapBakerWindow : EditorWindow {
     private const string BuiltInShadowShader = "Learn/BuiltIn/AnimMapWithShadowShader";
     private const string URPShader = "Learn/URP/AnimMapShader";
     private const string URPShadowShader = "Learn/URP/AnimMapWithShadowShader";
-    private static string _path = Path.Combine("Samples", "AnimationMapBaker", "Baked");
+    private static string _path = Path.Combine("ThirdPlugins", "AnimationMapBaker", "Baked");
     private static string _subPath = "SubPath";
     private static readonly int MainTex = Shader.PropertyToID("_MainTex");
     private static readonly int AnimMap = Shader.PropertyToID("_AnimMap");
     private static readonly int AnimLen = Shader.PropertyToID("_AnimLen");
     private bool _isShadowEnabled = false;
-    private string _previousShaderName = "";
 
     private static GameObject _targetGo;
     private static AnimMapBaker _baker;
@@ -71,11 +70,11 @@ public class AnimMapBakerWindow : EditorWindow {
 
             EditorGUILayout.LabelField("Warning: Enabling shadows will cause additional draw calls to draw shadows.", style);
         }
-        SwitchShader();
 
         if (!GUILayout.Button("Bake")) return;
+        SwitchShader();
 
-        if(_targetGo == null)
+        if (_targetGo == null)
         {
             EditorUtility.DisplayDialog("err", "targetGo is null！", "OK");
             return;
@@ -115,11 +114,7 @@ public class AnimMapBakerWindow : EditorWindow {
             else
                 sName = BuiltInShader;
         }
-        if(_previousShaderName != sName)
-        {
-            _animMapShader = Shader.Find(sName);
-            _previousShaderName = sName;
-        }
+        _animMapShader = Shader.Find(sName);
 
     }
 

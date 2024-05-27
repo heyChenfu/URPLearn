@@ -19,6 +19,7 @@ Shader "Learn/URP/AnimMapShader"
             Tags { "LightMode"="UniversalForward" }
 
             HLSLPROGRAM
+            #pragma target 4.5
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_instancing
