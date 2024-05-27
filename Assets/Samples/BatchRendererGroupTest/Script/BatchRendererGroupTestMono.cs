@@ -7,6 +7,7 @@ using System;
 using UnityEngine.Rendering;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.XR;
+using RVO;
 
 namespace BatchRendererGroupTest 
 {
@@ -27,7 +28,7 @@ namespace BatchRendererGroupTest
         public float c3y;
         public float c3z;
 
-        public void SetData(Matrix4x4 m)
+        public PackedMatrix(Matrix4x4 m)
         {
             c0x = m.m00;
             c0y = m.m10;
@@ -43,6 +44,21 @@ namespace BatchRendererGroupTest
             c3z = m.m23;
         }
     }
+
+    public struct AgentData 
+    {
+        public int AgentId;
+        public Vector3 TargetPosition;
+        public Matrix4x4 Matrix;
+
+        public AgentData(int agentId, Vector3 targetPosition, Matrix4x4 matrix)
+        {
+            AgentId = agentId;
+            TargetPosition = targetPosition;
+            Matrix = matrix;
+        }
+    }
+
 
     /// <summary>
     /// https://docs.unity3d.com/Manual/batch-renderer-group-creating-batches.html
@@ -62,14 +78,16 @@ namespace BatchRendererGroupTest
         BatchMeshID _meshID;
         BatchMaterialID _materialID;
         GraphicsBuffer _GPUPersistentInstanceData;
-        NativeArray<Vector3> _targetPoints;
-        NativeArray<Matrix4x4> _matrices;
-        NativeArray<PackedMatrix> _obj2WorldArr;
-        NativeArray<PackedMatrix> _world2ObjArr;
         BatchID _batchID;
         RandomMoveJob _randomMoveJob;
         JobHandle _jobHandle;
         bool _isJobSchedule = false;
+
+        //NativeArray<Vector3> _targetPoints;
+        //NativeArray<Matrix4x4> _matrices;
+        NativeArray<AgentData> _agentDataArr;
+        NativeArray<PackedMatrix> _obj2WorldArr;
+        NativeArray<PackedMatrix> _world2ObjArr;
 
         // Some helper constants to make calculations more convenient.
         private const int kSizeOfMatrix = sizeof(float) * 4 * 4;
@@ -87,21 +105,24 @@ namespace BatchRendererGroupTest
             AllocateInstanceDateBuffer();
 
             Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)DateTime.Now.Ticks);
-            _targetPoints = new NativeArray<Vector3>(TestAmount, Allocator.TempJob);
-            _matrices = new NativeArray<Matrix4x4>(TestAmount, Allocator.TempJob);
+            //_targetPoints = new NativeArray<Vector3>(TestAmount, Allocator.TempJob);
+            //_matrices = new NativeArray<Matrix4x4>(TestAmount, Allocator.TempJob);
+            _agentDataArr = new NativeArray<AgentData>(TestAmount, Allocator.TempJob);
             _obj2WorldArr = new NativeArray<PackedMatrix>(TestAmount, Allocator.TempJob);
             _world2ObjArr = new NativeArray<PackedMatrix>(TestAmount, Allocator.TempJob);
             for (int i = 0; i < TestAmount; ++i)
             {
                 float tmpX = random.NextFloat(RandomPostionRange.x, RandomPostionRange.y);
                 float tmpZ = random.NextFloat(RandomPostionRange.z, RandomPostionRange.w);
-                _targetPoints[i] = new Vector3(tmpX, 0, tmpZ);
-                _matrices[i] = Matrix4x4.Translate(_targetPoints[i]);
+                Vector3 pos = new Vector3(tmpX, 0, tmpZ);
+                int id = Simulator.Instance.addAgent(new RVO.Vector2(tmpX, tmpZ));
+                _agentDataArr[i] = new AgentData(id, pos, Matrix4x4.Translate(pos));
             }
             _randomMoveJob = new RandomMoveJob
             {
-                TargetPoints = _targetPoints,
-                Matrices = _matrices,
+                //TargetPoints = _targetPoints,
+                //Matrices = _matrices,
+                AgentDataArr = _agentDataArr,
                 Obj2WorldArr = _obj2WorldArr,
                 World2ObjArr = _world2ObjArr,
                 RandomPostionRange = RandomPostionRange,
@@ -145,6 +166,7 @@ namespace BatchRendererGroupTest
                 //}
             }
 
+            Simulator.Instance.doStep();
 
         }
 
@@ -153,8 +175,9 @@ namespace BatchRendererGroupTest
             _GPUPersistentInstanceData?.Dispose();
             if (_jobHandle != null)
                 _jobHandle.Complete();
-            _targetPoints.Dispose();
-            _matrices.Dispose();
+            //_targetPoints.Dispose();
+            //_matrices.Dispose();
+            _agentDataArr.Dispose();
             _obj2WorldArr.Dispose();
             _world2ObjArr.Dispose();
 
