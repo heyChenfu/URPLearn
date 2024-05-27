@@ -21,6 +21,8 @@ namespace BatchRendererGroupTest
 
         public void Execute(int index)
         {
+            if (index < 0 || index >= AgentDataArr.Length)
+                return;
             AgentData agentData = AgentDataArr[index];
             RVO.Vector2 rvoPos = Simulator.Instance.getAgentPosition(agentData.AgentId);
             Vector3 curPos = new Vector3(rvoPos.x(), 0, rvoPos.y());

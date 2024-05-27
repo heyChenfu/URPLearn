@@ -3,6 +3,8 @@
 ## 介绍
 Unity URP学习项目
 
+### BatchRendererGroupTest
+BatchRendererGroup+JobSystem+RVO大批量角色渲染
 ### ComputeShader 
 使用ComputeShader简单输出颜色到一个RenderTexture上
 ### UVSequenceFrameAnimation

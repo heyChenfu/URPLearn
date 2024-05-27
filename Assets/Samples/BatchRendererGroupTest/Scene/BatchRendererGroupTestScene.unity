@@ -155,12 +155,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ObjMesh: {fileID: 4300000, guid: d06688f72e50aaa48b0dea3435bfe092, type: 3}
   ObjMaterial: {fileID: 2100000, guid: daa4c5b5dfe6e6e429bf0eedeb27b08b, type: 2}
-  TestAmount: 16
+  TestAmount: 1000
   RandomPostionRange:
     x: 0
-    y: 20
+    y: 120
     z: 0
-    w: 20
+    w: 120
 --- !u!4 &783889798
 Transform:
   m_ObjectHideFlags: 0
