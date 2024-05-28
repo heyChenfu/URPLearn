@@ -89,12 +89,23 @@ namespace BatchRendererGroupTest
         NativeArray<PackedMatrix> _obj2WorldArr;
         NativeArray<PackedMatrix> _world2ObjArr;
 
+        // agent params
+        private float _agentRadius = 0.8f;
         // Some helper constants to make calculations more convenient.
         private const int kSizeOfMatrix = sizeof(float) * 4 * 4;
         private const int kSizeOfPackedMatrix = sizeof(float) * 4 * 3; //48
         private const int kSizeOfFloat4 = sizeof(float) * 4;
         private const int kBytesPerInstance = kSizeOfPackedMatrix * 2;
         private const int kExtraBytes = kSizeOfMatrix * 2;
+
+        void Awake()
+        {
+            Simulator.Instance.setTimeStep(0.15f);
+            Simulator.Instance.setAgentDefaults(15.0f, 10, 100.0f, 5.0f, _agentRadius, 2.0f, new RVO.Vector2(0.0f, 0.0f));
+            // add Obstacles in awake
+            Simulator.Instance.processObstacles();
+
+        }
 
         // Start is called before the first frame update
         void Start()
@@ -180,6 +191,14 @@ namespace BatchRendererGroupTest
             _agentDataArr.Dispose();
             _obj2WorldArr.Dispose();
             _world2ObjArr.Dispose();
+
+        }
+
+        private void OnDrawGizmos()
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(new Vector3(RandomPostionRange.y / 2, 0, RandomPostionRange.w / 2), 
+                new Vector3(RandomPostionRange.y, 0, RandomPostionRange.w));
 
         }
 
