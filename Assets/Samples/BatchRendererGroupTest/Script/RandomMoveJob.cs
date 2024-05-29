@@ -42,7 +42,7 @@ namespace BatchRendererGroupTest
             //dir = math.normalizesafe(newTargetPos - curPos, Vector3.forward);
             //curPos += dir * DeltaTime;
             //RVO移动
-            float moveSpeed = 0.08f;
+            float moveSpeed = 0.1f;
             RVO.Vector2 goalVector = new RVO.Vector2(newTargetPos.x, newTargetPos.z) - rvoPos;
             //if (RVOMath.absSq(goalVector) > 1.0f)
                 goalVector = RVOMath.normalize(goalVector);

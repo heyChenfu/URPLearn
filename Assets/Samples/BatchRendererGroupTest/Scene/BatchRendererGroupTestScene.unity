@@ -154,12 +154,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ObjMesh: {fileID: 4300000, guid: d06688f72e50aaa48b0dea3435bfe092, type: 3}
   ObjMaterial: {fileID: 2100000, guid: daa4c5b5dfe6e6e429bf0eedeb27b08b, type: 2}
-  TestAmount: 5
+  TestAmount: 1000
   RandomPostionRange:
     x: 0
-    y: 10
+    y: 80
     z: 0
-    w: 10
+    w: 80
 --- !u!4 &783889798
 Transform:
   m_ObjectHideFlags: 0
@@ -379,13 +379,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1405387842}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.3269941, y: 0.03117438, z: -0.0107928505, w: 0.94445044}
-  m_LocalPosition: {x: 2.7789276, y: 8.502279, z: -8.167823}
+  m_LocalRotation: {x: 0.42261827, y: 0, z: 0, w: 0.9063079}
+  m_LocalPosition: {x: 50, y: 33, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 50, y: 0, z: 0}
 --- !u!114 &1405387846
 MonoBehaviour:
   m_ObjectHideFlags: 0

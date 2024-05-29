@@ -153,7 +153,7 @@ namespace BatchRendererGroupTest
                 _jobHandle = _randomMoveJob.Schedule(TestAmount, 64);
                 _isJobSchedule = true;
             }
-            else if(_jobHandle != null && _jobHandle.IsCompleted)
+            else if(_jobHandle.IsCompleted)
             {
                 _jobHandle.Complete();
                 _isJobSchedule = false;
@@ -184,7 +184,7 @@ namespace BatchRendererGroupTest
         private void OnDestroy()
         {
             _GPUPersistentInstanceData?.Dispose();
-            if (_jobHandle != null)
+            if (_isJobSchedule)
                 _jobHandle.Complete();
             //_targetPoints.Dispose();
             //_matrices.Dispose();
