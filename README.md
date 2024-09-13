@@ -4,7 +4,7 @@
 Unity URP学习项目
 
 ### BatchRendererGroupTest
-BatchRendererGroup+JobSystem+RVO大批量角色渲染
+BatchRendererGroup+Animation Texture+JobSystem+RVO大批量角色渲染
 ![效果图](images/BatchRendererGroupTest.png)
 
 ### RVO2Examples
