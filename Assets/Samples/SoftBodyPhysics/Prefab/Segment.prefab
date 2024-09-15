@@ -197,6 +197,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
+      propertyPath: SpringForce
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
       propertyPath: ConstraintDamping
       value: 1
       objectReference: {fileID: 0}

@@ -54,8 +54,12 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
+      propertyPath: SpringForce
+      value: 10000
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
       propertyPath: ConstraintDamping
-      value: 1
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
       propertyPath: Point.Array.data[0]
@@ -199,6 +203,14 @@ PrefabInstance:
     - target: {fileID: 4428789126866111536, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
       propertyPath: m_Name
       value: ConstraintLinePrefab (2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
+      propertyPath: SpringForce
+      value: 10000
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
+      propertyPath: ConstraintDamping
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
       propertyPath: Point.Array.data[0]
@@ -415,6 +427,14 @@ PrefabInstance:
     - target: {fileID: 4428789126866111536, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
       propertyPath: m_Name
       value: ConstraintLinePrefab (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
+      propertyPath: SpringForce
+      value: 10000
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
+      propertyPath: ConstraintDamping
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 5056771125655250094, guid: 891f8a8220d42cb4bb045ad6fb4cbefa, type: 3}
       propertyPath: Point.Array.data[0]

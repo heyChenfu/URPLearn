@@ -5,6 +5,7 @@ namespace SoftBodySimulator
     public class SoftBodyPointMono : MonoBehaviour
     {
         public float Radius;
+        public float MaxVelocity = 10f;
         [HideInInspector]
         public Vector2 Velocity;
         [HideInInspector]

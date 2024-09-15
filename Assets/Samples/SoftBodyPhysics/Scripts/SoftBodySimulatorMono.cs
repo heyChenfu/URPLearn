@@ -99,17 +99,29 @@ namespace SoftBodySimulator
             {
                 Vector2 distance = _constraintLineList[i].Point[0].transform.position - _constraintLineList[i].Point[1].transform.position;
                 float distanceLen = distance.magnitude;
+                Vector2 direction = distance.normalized;
                 if (Mathf.Abs(distanceLen) <= float.Epsilon)
                     continue;
-                Vector2 requiredDistance = distance * (_constraintLineList[i].Distance / distanceLen);
-                //添加阻尼以实现软约束
-                float dampingFactor = 1 - Mathf.Exp(-_constraintLineList[i].ConstraintDamping * Time.deltaTime);
-                //Vector2 offset = (requiredDistance - distanceVec) * dampingFactor;
-                //Vector3 offset3 = new Vector3(offset.x / 2f, offset.y / 2f, 0);
+                Vector2 requiredDistance = direction * (_constraintLineList[i].Distance / distanceLen);
                 //对约束对象施加弹簧力
                 Vector2 force = _constraintLineList[i].SpringForce * (requiredDistance - distance) * Time.deltaTime;
                 _constraintLineList[i].Point[0].Velocity += force;
                 _constraintLineList[i].Point[1].Velocity -= force;
+
+                // 计算弹簧方向上的相对速度
+                Vector2 relativeVelocity = _constraintLineList[i].Point[0].Velocity - _constraintLineList[i].Point[1].Velocity;
+                //在弹簧方向上投影这个相对速度，以获得vrel相对速度在弹簧方向上的分量
+                float vrel = Vector2.Dot(relativeVelocity, direction);
+                //添加阻尼以实现软约束
+                float dampingFactor = Mathf.Exp(- _constraintLineList[i].ConstraintDamping * Time.deltaTime);
+                //阻尼力公式
+                float new_vrel = vrel * dampingFactor;
+                float vrel_delta = new_vrel - vrel;
+                Vector2 dampingVector = direction * vrel_delta / 2.0f;
+
+                //阻尼力以相反方向作用在两个物体上，分别减去和增加一半的阻尼力，从而减小弹簧的振动
+                _constraintLineList[i].Point[0].Velocity += dampingVector;
+                _constraintLineList[i].Point[1].Velocity -= dampingVector;
 
             }
             //modify position
