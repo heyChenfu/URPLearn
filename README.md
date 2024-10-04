@@ -10,6 +10,9 @@ BatchRendererGroup+Animation Texture+JobSystem+RVO大批量角色渲染
 ### RVO2Examples
 ![效果图](images/RVO2Test.gif)
 
+### Boid模拟
+根据 https://github.com/SebLague/Boids 提供的教程学习Boid模拟
+![效果图](images/boid效果图.png)
 ### ComputeShader 
 使用ComputeShader简单输出颜色到一个RenderTexture上
 ### UVSequenceFrameAnimation

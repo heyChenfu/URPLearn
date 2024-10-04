@@ -11,7 +11,7 @@ namespace BoidsSimulator
         [SerializeField]
         public int InstantiateCount = 10;
         [SerializeField]
-        public GameObject TargetObj;
+        public GameObject TargetObj = null;
 
         BoidsDataMono _boidsData;
         BoidsMono[] _boidsArr;
@@ -25,12 +25,12 @@ namespace BoidsSimulator
             for (int i = 0; i < InstantiateCount; ++i)
             {
                 var boidObj = GameObject.Instantiate(BoidObj);
-                float posX = Random.Range(-5f, 5f);
-                float posY = Random.Range(-5f, 5f);
-                float posZ = Random.Range(-5f, 5f);
+                float posX = transform.position.x + Random.Range(-10f, 10f);
+                float posY = transform.position.y + Random.Range(-10f, 10f);
+                float posZ = transform.position.z + Random.Range(-10f, 10f);
                 boidObj.transform.position = new Vector3(posX, posY, posZ);
                 _boidsArr[i] = boidObj.GetComponent<BoidsMono>();
-                _boidsArr[i].Initialize(_boidsData, TargetObj.transform);
+                _boidsArr[i].Initialize(_boidsData, TargetObj != null ? TargetObj.transform : null);
             }
         }
 
@@ -42,6 +42,10 @@ namespace BoidsSimulator
 
             for (int i = 0; i < _boidsArr.Length; ++i)
             {
+                _boidsArr[i].NumFlockmates = 0;
+                _boidsArr[i].FlockHeading = Vector3.zero;
+                _boidsArr[i].FlockCentre = Vector3.zero;
+                _boidsArr[i].AvoidanceHeading = Vector3.zero;
                 for (int j = 0; j < _boidsArr.Length; ++j)
                 {
                     if (i == j)
