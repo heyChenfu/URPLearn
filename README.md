@@ -3,16 +3,14 @@
 ## 介绍
 Unity URP学习项目
 
-### BatchRendererGroupTest
-BatchRendererGroup+Animation Texture+JobSystem+RVO大批量角色渲染
-![效果图](images/BatchRendererGroupTest.png)
-
-### RVO2Examples
-![效果图](images/RVO2Test.gif)
-
 ### Boid模拟
 根据 https://github.com/SebLague/Boids 提供的教程学习Boid模拟
 ![效果图](images/boid效果.gif)
+### BatchRendererGroupTest
+BatchRendererGroup+Animation Texture+JobSystem+RVO大批量角色渲染
+![效果图](images/BatchRendererGroupTest.png)
+### RVO2Examples
+![效果图](images/RVO2Test.gif)
 ### RenderObjectsRendererFeatureSample
 根据官方文档制作, 物体被遮挡后以另一个Shader方式显示
 ![效果图](images/物体被遮挡后以另一个Shader显示.png)
