@@ -24,6 +24,8 @@ namespace SoftBodySimulator
     public class SoftBodySimulatorMono : MonoBehaviour
     {
         [SerializeField]
+        int _instantiateCount;
+        [SerializeField]
         GameObject _instantiatePrefab;
         [SerializeField]
         LineRenderer _collisionLine;
@@ -42,7 +44,7 @@ namespace SoftBodySimulator
         // Start is called before the first frame update
         void Start()
         {
-            for (int i = 0; i < 1; ++i)
+            for (int i = 0; i < _instantiateCount; ++i)
             {
                 var obj = Instantiate(_instantiatePrefab, transform);
                 obj.transform.position = new Vector3(Random.Range(-6, 6), Random.Range(-3, 3), 0);

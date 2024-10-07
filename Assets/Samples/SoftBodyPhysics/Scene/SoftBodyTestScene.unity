@@ -151,7 +151,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29a49060bfccdb841aae3ca597f54cf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _instantiatePrefab: {fileID: 8938884442203200314, guid: 73b02e224da812443a2996f22b357081, type: 3}
+  _instantiateCount: 5
+  _instantiatePrefab: {fileID: 5851974999667202710, guid: bf820048cc03a804e96d441077710c01, type: 3}
   _collisionLine: {fileID: 1872686160}
   _gravity: {x: 0, y: -5}
   _elasticity: 0.6
