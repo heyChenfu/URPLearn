@@ -10,12 +10,9 @@ namespace BoidsECSSimulator
     {
         public GameObject Prefab;
         public int SpawnNumber = 10;
+        public float SpawnScale;
         public float SpawnRange = 5;
-        public float minSpeed;
-        public float maxSpeed;
-        public float boundsRadius;
-        public float collisionAvoidDst;
-        public LayerMask obstacleLayerMask;
+
 
     }
 
@@ -30,14 +27,10 @@ namespace BoidsECSSimulator
                 // Given a GameObject (or authoring component), GetEntity looks up the resulting Entity.
                 Prefab = GetEntity(authoring.Prefab, TransformUsageFlags.Dynamic),
                 SpawnPosition = authoring.transform.position,
+                SpawnScale = authoring.SpawnScale,
                 SpawnNumber = authoring.SpawnNumber,
                 SpawnRange = authoring.SpawnRange,
-                minSpeed = authoring.minSpeed,
-                maxSpeed = authoring.maxSpeed,
-                boundsRadius = authoring.boundsRadius,
-                collisionAvoidDst = authoring.collisionAvoidDst,
-                obstacleLayerMask = authoring.obstacleLayerMask,
-            });
+            }); ;
         }
     }
 
@@ -46,13 +39,9 @@ namespace BoidsECSSimulator
     {
         public Entity Prefab;
         public float3 SpawnPosition;
+        public float SpawnScale;
         public int SpawnNumber;
         public float SpawnRange;
-        public float minSpeed;
-        public float maxSpeed;
-        public float boundsRadius;
-        public float collisionAvoidDst;
-        public int obstacleLayerMask;
 
     }
 

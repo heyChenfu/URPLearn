@@ -14,7 +14,6 @@ namespace BoidsECSSimulator
 
         public void OnDestroy(ref SystemState state) { }
 
-        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             Random random = Random.CreateFromIndex((uint)state.GlobalSystemVersion);
@@ -37,8 +36,12 @@ namespace BoidsECSSimulator
                     // Spawns a new entity and positions it at the spawner.
                     Entity newEntity = state.EntityManager.Instantiate(spawner.Prefab);
                     // LocalPosition.FromPosition returns a Transform initialized with the given position.
-                    state.EntityManager.SetComponentData(newEntity, 
-                        LocalTransform.FromPosition(spawner.SpawnPosition + randomOffset));
+                    // Set position, rotation, and scale
+                    float3 position = spawner.SpawnPosition + randomOffset;
+                    quaternion rotation = quaternion.identity;
+                    float scale = spawner.SpawnScale;
+                    state.EntityManager.SetComponentData(newEntity,
+                        LocalTransform.FromPositionRotationScale(position, rotation, scale));
                 }
             }
             state.EntityManager.RemoveComponent<BoidSpawnerComponentData>(spawnerEntitiesQuery);
