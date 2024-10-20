@@ -1,10 +1,12 @@
 ﻿
 using Unity.Burst;
+using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEditor.Build.Content;
+using static UnityEngine.GraphicsBuffer;
 
 namespace BoidsECSSimulator
 {
@@ -51,4 +53,42 @@ namespace BoidsECSSimulator
         }
 
     }
+
+
+    [BurstCompile]
+    partial struct BoidMainCalJob : IJobChunk
+    {
+        [NativeDisableParallelForRestriction]
+        public EntityManager entityManager;
+
+        public SharedComponentTypeHandle<BoidComponentData> BoidComponentDataHandle;
+        [ReadOnly] public ComponentTypeHandle<LocalToWorld> LocalToWorldHandle;
+
+        public NativeArray<float3> FlockHeadingArr;
+        public NativeArray<float3> FlockCentreArr;
+        public NativeArray<float3> AvoidanceHeadingArr;
+        public NativeArray<int> NumFlockmatesArr;
+
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+        {
+            // 获取当前 chunk 中的 BoidComponentData 索引
+            int sharedComponentIndex = chunk.GetSharedComponentIndex(BoidComponentDataHandle);
+            // 通过 EntityManager 获取对应的 BoidSharedComponentData
+            BoidComponentData sharedData = entityManager.GetSharedComponentManaged<BoidComponentData>(sharedComponentIndex);
+
+            NativeArray<LocalToWorld> localToWorldArr = chunk.GetNativeArray(ref LocalToWorldHandle);
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                for (int j = 0; j < chunk.Count; j++)
+                {
+                    if (i == j)
+                        continue;
+
+                }
+            }
+
+        }
+
+    }
+
 }
