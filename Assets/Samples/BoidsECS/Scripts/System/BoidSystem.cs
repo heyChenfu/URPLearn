@@ -3,7 +3,6 @@ using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -24,9 +23,13 @@ namespace BoidsECSSimulator
         {
             EntityQuery boidQuery = SystemAPI.QueryBuilder().WithAll<BoidSharedComponentData>().
                 WithAllRW<BoidData>().WithAllRW<LocalTransform>().WithAllRW<LocalToWorld>().Build();
+            var targetQuery = SystemAPI.QueryBuilder().WithAll<BoidTarget, LocalToWorld>().Build();
+            var obstacleQuery = SystemAPI.QueryBuilder().WithAll<BoidObstacle, LocalToWorld>().Build();
 
             var world = state.WorldUnmanaged;
             state.EntityManager.GetAllUniqueSharedComponents(out NativeList<BoidSharedComponentData> uniqueBoidTypes, world.UpdateAllocator.ToAllocator);
+            int targetCount = targetQuery.CalculateEntityCount();
+            int obstacleCount = obstacleQuery.CalculateEntityCount();
             float dt = math.min(0.05f, SystemAPI.Time.DeltaTime);
 
             //每次循环处理一组相同 Boid 配置的实体
@@ -40,8 +43,20 @@ namespace BoidsECSSimulator
                     continue;
                 }
 
-                //NativeArray<float3> accelerationArr = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(
-                //    boidCount, ref world.UpdateAllocator);
+                var targetPositions = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(targetCount, ref world.UpdateAllocator);
+                var obstaclePositions = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(obstacleCount, ref world.UpdateAllocator);
+
+                var targetPositionJob = new InitialPositionJob()
+                {
+                    TargetPositions = targetPositions,
+                };
+                JobHandle targetPositionJobHandle = targetPositionJob.ScheduleParallel(targetQuery, state.Dependency);
+                var obstaclePositionJob = new InitialPositionJob()
+                {
+                    TargetPositions = obstaclePositions,
+                };
+                JobHandle obstaclePositionJobHandle = obstaclePositionJob.ScheduleParallel(obstacleQuery, state.Dependency);
+                JobHandle initHandle = JobHandle.CombineDependencies(targetPositionJobHandle, obstaclePositionJobHandle);
 
                 var boidMainJob = new BoidMainCalJob()
                 {
@@ -50,7 +65,7 @@ namespace BoidsECSSimulator
                     LocalTransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     LocalToWorldHandle = SystemAPI.GetComponentTypeHandle<LocalToWorld>(),
                 };
-                JobHandle boidMainJobHandle = boidMainJob.ScheduleParallel(boidQuery, state.Dependency);
+                JobHandle boidMainJobHandle = boidMainJob.ScheduleParallel(boidQuery, initHandle);
                 //处理障碍物碰撞检测
 
                 //移动boid实体
@@ -68,6 +83,16 @@ namespace BoidsECSSimulator
             uniqueBoidTypes.Dispose();
         }
 
+    }
+
+    [BurstCompile]
+    partial struct InitialPositionJob : IJobEntity
+    {
+        public NativeArray<float3> TargetPositions;
+        void Execute([EntityIndexInQuery] int entityIndexInQuery, in LocalToWorld localToWorld)
+        {
+            TargetPositions[entityIndexInQuery] = localToWorld.Position;
+        }
     }
 
     [BurstCompile]
@@ -137,16 +162,8 @@ namespace BoidsECSSimulator
         private float3 SteerTowards(float3 vector, BoidSharedComponentData boidSharedData, BoidData boidData)
         {
             //目标方向和当前速度差值以得到所需的加速度向量
-            float3 v = Normalize(vector) * boidSharedData.maxSpeed - boidData.Velocity;
+            float3 v = math.normalize(vector) * boidSharedData.maxSpeed - boidData.Velocity;
             return ClampMagnitude(v, boidSharedData.maxSteerForce);
-        }
-
-        private float3 Normalize(float3 value)
-        {
-            float num = (float)math.sqrt(value.x * value.x + value.y * value.y + value.z * value.z);
-            if (num > 1E-05f)
-                return value / num;
-            return float3.zero;
         }
 
         public static float3 ClampMagnitude(float3 vector, float maxLength)
