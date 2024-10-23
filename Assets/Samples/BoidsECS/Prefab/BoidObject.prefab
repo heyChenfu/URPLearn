@@ -385,6 +385,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minSpeed: 20
   maxSpeed: 40
+  perceptionRadius: 2.5
+  avoidanceRadius: 2
+  maxSteerForce: 8
   alignWeight: 2
   cohesionWeight: 1
   seperateWeight: 2.5

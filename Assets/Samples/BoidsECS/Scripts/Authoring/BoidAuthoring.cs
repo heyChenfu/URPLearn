@@ -52,12 +52,12 @@ namespace BoidsECSSimulator
     [Serializable]
     public struct BoidData : IComponentData 
     {
-        public float3 Forward;
         public float3 FlockHeading; //当前Boid感知到的所有邻居的方向总和
         public float3 FlockCentre; //当前Boid感知到的所有邻居的位置总和
         public float3 AvoidanceHeading; //当前Boid感知到的所有邻居的分离方向总和
         public int NumFlockmates; //当前Boid感知到的邻居数量
         public float3 Velocity;
+        public float3 Acceleration;
 
     }
 

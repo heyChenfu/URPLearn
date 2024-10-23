@@ -38,39 +38,43 @@ namespace BoidsECSSimulator
                     boidQuery.ResetFilter();
                     continue;
                 }
-                //NativeArray<float3> flockHeadingArr = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(
-                //    boidCount, ref world.UpdateAllocator);
-                //NativeArray<float3> flockCentreArr = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(
-                //    boidCount, ref world.UpdateAllocator);
-                //NativeArray<float3> avoidanceHeadingArr = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(
-                //    boidCount, ref world.UpdateAllocator);
-                //NativeArray<int> numFlockmatesArr = CollectionHelper.CreateNativeArray<int, RewindableAllocator>(
+
+                //NativeArray<float3> accelerationArr = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(
                 //    boidCount, ref world.UpdateAllocator);
 
-                var boidMainJob = new BoidMainCalJob() {
+                var boidMainJob = new BoidMainCalJob()
+                {
                     BoidComponentDataHandle = SystemAPI.GetSharedComponentTypeHandle<BoidSharedComponentData>(),
                     BoidDataHandle = SystemAPI.GetComponentTypeHandle<BoidData>(),
                     LocalToWorldHandle = SystemAPI.GetComponentTypeHandle<LocalToWorld>(),
-                    //FlockHeadingArr = flockHeadingArr,
-                    //FlockCentreArr = flockCentreArr,
-                    //AvoidanceHeadingArr = avoidanceHeadingArr,
-                    //NumFlockmatesArr = numFlockmatesArr,
                 };
                 JobHandle boidMainJobHandle = boidMainJob.ScheduleParallel(boidQuery, state.Dependency);
+                //处理障碍物碰撞检测
 
+                //移动boid实体
+                var steerBoidJob = new SteerBoidJob()
+                {
+                    deltaTime = dt,
+                };
+                var steerBoidJobHandle = steerBoidJob.ScheduleParallel(boidQuery, boidMainJobHandle);
+
+                state.Dependency = steerBoidJobHandle;
+
+                boidQuery.AddDependency(state.Dependency);
                 boidQuery.ResetFilter();
             }
+            uniqueBoidTypes.Dispose();
         }
 
     }
-
 
     [BurstCompile]
     unsafe struct BoidMainCalJob : IJobChunk
     {
         public SharedComponentTypeHandle<BoidSharedComponentData> BoidComponentDataHandle;
         public ComponentTypeHandle<BoidData> BoidDataHandle;
-        [ReadOnly] public ComponentTypeHandle<LocalToWorld> LocalToWorldHandle;
+        [ReadOnly] 
+        public ComponentTypeHandle<LocalToWorld> LocalToWorldHandle;
 
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
@@ -98,19 +102,19 @@ namespace BoidsECSSimulator
                             boidDataArr[i].AvoidanceHeading -= offset / sqrDst;
                     }
                 }
-                UpdateBoid(i, boidSharedData, boidDataArr[i], localToWorldArr[i]);
+                boidDataArr[i].Acceleration = UpdateBoid(boidSharedData, boidDataArr[i], localToWorldArr[i]);
             }
 
         }
 
-        private void UpdateBoid(int index, BoidSharedComponentData boidSharedData, BoidData boidData, LocalToWorld localToWorld)
+        private float3 UpdateBoid(BoidSharedComponentData boidSharedData, BoidData boidData, LocalToWorld localToWorld)
         {
             float3 acceleration = float3.zero;
 
             if (boidData.NumFlockmates > 0)
             {
                 //位置总和除以邻居数量得到邻居平均位置
-                float3 centreOfFlockmates = boidData.FlockCentre[index] / boidData.NumFlockmates;
+                float3 centreOfFlockmates = boidData.FlockCentre / boidData.NumFlockmates;
                 //当前位置指向邻居平均位置向量
                 float3 offsetToFlockmatesCentre = centreOfFlockmates - localToWorld.Position;
 
@@ -118,8 +122,11 @@ namespace BoidsECSSimulator
                 var alignmentForce = SteerTowards(boidData.FlockHeading, boidSharedData, boidData) * boidSharedData.alignWeight;
                 var cohesionForce = SteerTowards(offsetToFlockmatesCentre, boidSharedData, boidData) * boidSharedData.cohesionWeight;
                 var seperationForce = SteerTowards(boidData.AvoidanceHeading, boidSharedData, boidData) * boidSharedData.seperateWeight;
-
+                acceleration += alignmentForce;
+                acceleration += cohesionForce;
+                acceleration += seperationForce;
             }
+            return acceleration;
         }
 
         private float3 SteerTowards(float3 vector, BoidSharedComponentData boidSharedData, BoidData boidData)
@@ -151,6 +158,33 @@ namespace BoidsECSSimulator
             return vector;
         }
 
+    }
+
+    [BurstCompile]
+    partial struct SteerBoidJob : IJobEntity
+    {
+        public float deltaTime;
+
+        void Execute([EntityIndexInQuery] int entityIndexInQuery, 
+            in BoidSharedComponentData boidSharedData,
+            ref BoidData boidData, 
+            ref LocalToWorld localToWorld)
+        {
+            boidData.Velocity += boidData.Acceleration * deltaTime;
+            //使用最大最小速度约束当前速度
+            float speed = (float)math.sqrt(boidData.Velocity.x * boidData.Velocity.x + boidData.Velocity.y * boidData.Velocity.y + boidData.Velocity.z * boidData.Velocity.z);
+            float3 dir = speed != 0 ? (boidData.Velocity / speed) : float3.zero;
+            speed = math.clamp(speed, boidSharedData.minSpeed, boidSharedData.maxSpeed);
+            boidData.Velocity = dir * speed;
+
+            localToWorld = new LocalToWorld {
+                Value = float4x4.TRS(
+                    localToWorld.Position + boidData.Velocity * deltaTime,
+                    quaternion.LookRotationSafe(dir, math.up()),
+                    20
+                    )
+            };
+        }
     }
 
 }

@@ -40,8 +40,8 @@ namespace BoidsECSSimulator
                     float3 position = spawner.SpawnPosition + randomOffset;
                     quaternion rotation = quaternion.identity;
                     float scale = spawner.SpawnScale;
-                    state.EntityManager.SetComponentData(newEntity,
-                        LocalTransform.FromPositionRotationScale(position, rotation, scale));
+                    state.EntityManager.SetComponentData(newEntity, LocalTransform.FromPositionRotationScale(position, rotation, scale));
+
                 }
             }
             state.EntityManager.RemoveComponent<BoidSpawnerComponentData>(spawnerEntitiesQuery);
