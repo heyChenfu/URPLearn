@@ -153,15 +153,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 7692798108756314477, guid: eb2920d0e3d415443b0ea83786f03176, type: 3}
   SpawnNumber: 10
-  SpawnScale: 20
-  SpawnRange: 10
-  minSpeed: 20
-  maxSpeed: 40
-  boundsRadius: 20
-  collisionAvoidDst: 20
-  obstacleLayerMask:
-    serializedVersion: 2
-    m_Bits: 256
+  SpawnScale: 1
+  SpawnRange: 3
 --- !u!4 &1597642613
 Transform:
   m_ObjectHideFlags: 0

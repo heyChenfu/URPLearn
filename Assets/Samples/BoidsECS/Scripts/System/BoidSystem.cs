@@ -3,6 +3,7 @@ using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -21,8 +22,8 @@ namespace BoidsECSSimulator
 
         public void OnUpdate(ref SystemState state)
         {
-            EntityQuery boidQuery = SystemAPI.QueryBuilder().
-                WithAll<BoidSharedComponentData>().WithAllRW<BoidData>().WithAllRW<LocalToWorld>().Build();
+            EntityQuery boidQuery = SystemAPI.QueryBuilder().WithAll<BoidSharedComponentData>().
+                WithAllRW<BoidData>().WithAllRW<LocalTransform>().WithAllRW<LocalToWorld>().Build();
 
             var world = state.WorldUnmanaged;
             state.EntityManager.GetAllUniqueSharedComponents(out NativeList<BoidSharedComponentData> uniqueBoidTypes, world.UpdateAllocator.ToAllocator);
@@ -46,6 +47,7 @@ namespace BoidsECSSimulator
                 {
                     BoidComponentDataHandle = SystemAPI.GetSharedComponentTypeHandle<BoidSharedComponentData>(),
                     BoidDataHandle = SystemAPI.GetComponentTypeHandle<BoidData>(),
+                    LocalTransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     LocalToWorldHandle = SystemAPI.GetComponentTypeHandle<LocalToWorld>(),
                 };
                 JobHandle boidMainJobHandle = boidMainJob.ScheduleParallel(boidQuery, state.Dependency);
@@ -74,12 +76,15 @@ namespace BoidsECSSimulator
         public SharedComponentTypeHandle<BoidSharedComponentData> BoidComponentDataHandle;
         public ComponentTypeHandle<BoidData> BoidDataHandle;
         [ReadOnly] 
+        public ComponentTypeHandle<LocalTransform> LocalTransformHandle;
+        [ReadOnly]
         public ComponentTypeHandle<LocalToWorld> LocalToWorldHandle;
 
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
             BoidSharedComponentData boidSharedData = chunk.GetSharedComponent(BoidComponentDataHandle);
             BoidData* boidDataArr = chunk.GetComponentDataPtrRW(ref BoidDataHandle);
+            NativeArray<LocalTransform> localTransformArr = chunk.GetNativeArray(ref LocalTransformHandle);
             NativeArray<LocalToWorld> localToWorldArr = chunk.GetNativeArray(ref LocalToWorldHandle);
             for (int i = 0; i < chunk.Count; i++)
             {
@@ -91,23 +96,23 @@ namespace BoidsECSSimulator
                 {
                     if (i == j)
                         continue;
-                    float3 offset = localToWorldArr[i].Position - localToWorldArr[j].Position;
+                    float3 offset = localTransformArr[i].Position - localTransformArr[j].Position;
                     float sqrDst = offset.x * offset.x + offset.y * offset.y + offset.z * offset.z;
                     if (sqrDst < boidSharedData.perceptionRadius * boidSharedData.perceptionRadius)
                     {
                         boidDataArr[i].NumFlockmates += 1;
-                        boidDataArr[i].FlockHeading+= localToWorldArr[j].Forward;
-                        boidDataArr[i].FlockCentre += localToWorldArr[j].Position;
+                        boidDataArr[i].FlockHeading += boidDataArr[i].Forward;
+                        boidDataArr[i].FlockCentre += localTransformArr[j].Position;
                         if (sqrDst < boidSharedData.avoidanceRadius * boidSharedData.avoidanceRadius)
                             boidDataArr[i].AvoidanceHeading -= offset / sqrDst;
                     }
                 }
-                boidDataArr[i].Acceleration = UpdateBoid(boidSharedData, boidDataArr[i], localToWorldArr[i]);
+                boidDataArr[i].Acceleration = UpdateBoid(boidSharedData, boidDataArr[i], localTransformArr[i]);
             }
 
         }
 
-        private float3 UpdateBoid(BoidSharedComponentData boidSharedData, BoidData boidData, LocalToWorld localToWorld)
+        private float3 UpdateBoid(BoidSharedComponentData boidSharedData, BoidData boidData, LocalTransform localTransform)
         {
             float3 acceleration = float3.zero;
 
@@ -116,7 +121,7 @@ namespace BoidsECSSimulator
                 //位置总和除以邻居数量得到邻居平均位置
                 float3 centreOfFlockmates = boidData.FlockCentre / boidData.NumFlockmates;
                 //当前位置指向邻居平均位置向量
-                float3 offsetToFlockmatesCentre = centreOfFlockmates - localToWorld.Position;
+                float3 offsetToFlockmatesCentre = centreOfFlockmates - localTransform.Position;
 
                 //分别得到对齐,聚合,分离
                 var alignmentForce = SteerTowards(boidData.FlockHeading, boidSharedData, boidData) * boidSharedData.alignWeight;
@@ -165,10 +170,10 @@ namespace BoidsECSSimulator
     {
         public float deltaTime;
 
-        void Execute([EntityIndexInQuery] int entityIndexInQuery, 
+        void Execute([EntityIndexInQuery] int entityIndexInQuery,
             in BoidSharedComponentData boidSharedData,
-            ref BoidData boidData, 
-            ref LocalToWorld localToWorld)
+            ref BoidData boidData,
+            ref LocalTransform localTransform)
         {
             boidData.Velocity += boidData.Acceleration * deltaTime;
             //使用最大最小速度约束当前速度
@@ -177,13 +182,18 @@ namespace BoidsECSSimulator
             speed = math.clamp(speed, boidSharedData.minSpeed, boidSharedData.maxSpeed);
             boidData.Velocity = dir * speed;
 
-            localToWorld = new LocalToWorld {
-                Value = float4x4.TRS(
-                    localToWorld.Position + boidData.Velocity * deltaTime,
-                    quaternion.LookRotationSafe(dir, math.up()),
-                    20
-                    )
-            };
+            localTransform.Position = localTransform.Position + boidData.Velocity * deltaTime;
+            localTransform.Rotation = quaternion.LookRotationSafe(dir, math.up());
+            boidData.Forward = dir;
+            //localTransform = new LocalTransform
+            //{
+            //    Value = float4x4.TRS(
+            //        localToWorld.Position + boidData.Velocity * deltaTime,
+            //        quaternion.LookRotationSafe(dir, math.up()),
+            //        20
+            //        )
+            //}
+
         }
     }
 

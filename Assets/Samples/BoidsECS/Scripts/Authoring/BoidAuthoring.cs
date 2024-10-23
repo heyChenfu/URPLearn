@@ -43,7 +43,11 @@ namespace BoidsECSSimulator
                     collisionAvoidDst = authoring.collisionAvoidDst,
                     obstacleLayerMask = authoring.obstacleLayerMask,
                 });
-                AddComponent(entity, new BoidData());
+                float startSpeed = (authoring.minSpeed + authoring.maxSpeed) / 2;
+                AddComponent(entity, new BoidData() {
+                    Forward = new float3(0, 0, 1),
+                    Velocity = new float3(0, 0, 1) * startSpeed,
+            });
 
             }
         }
@@ -56,6 +60,7 @@ namespace BoidsECSSimulator
         public float3 FlockCentre; //当前Boid感知到的所有邻居的位置总和
         public float3 AvoidanceHeading; //当前Boid感知到的所有邻居的分离方向总和
         public int NumFlockmates; //当前Boid感知到的邻居数量
+        public float3 Forward;
         public float3 Velocity;
         public float3 Acceleration;
 
