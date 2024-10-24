@@ -11,6 +11,8 @@ namespace BoidsSimulator
         [SerializeField]
         public int InstantiateCount = 10;
         [SerializeField]
+        public float InitRange = 10;
+        [SerializeField]
         public GameObject TargetObj = null;
 
         BoidsDataMono _boidsData;
@@ -25,9 +27,9 @@ namespace BoidsSimulator
             for (int i = 0; i < InstantiateCount; ++i)
             {
                 var boidObj = GameObject.Instantiate(BoidObj);
-                float posX = transform.position.x + Random.Range(-10f, 10f);
-                float posY = transform.position.y + Random.Range(-10f, 10f);
-                float posZ = transform.position.z + Random.Range(-10f, 10f);
+                float posX = transform.position.x + Random.Range(-InitRange, InitRange);
+                float posY = transform.position.y + Random.Range(-InitRange, InitRange);
+                float posZ = transform.position.z + Random.Range(-InitRange, InitRange);
                 boidObj.transform.position = new Vector3(posX, posY, posZ);
                 _boidsArr[i] = boidObj.GetComponent<BoidsMono>();
                 _boidsArr[i].Initialize(_boidsData, TargetObj != null ? TargetObj.transform : null);

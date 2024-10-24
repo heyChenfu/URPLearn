@@ -44,14 +44,17 @@ namespace BoidsECSSimulator
                 }
 
                 var targetPositions = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(targetCount, ref world.UpdateAllocator);
+                var isPositionSet = CollectionHelper.CreateNativeArray<bool, RewindableAllocator>(targetCount, ref world.UpdateAllocator);
                 var obstaclePositions = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(obstacleCount, ref world.UpdateAllocator);
 
-                var targetPositionJob = new InitialPositionJob()
+                var targetPositionJob = new InitialTargetPositionJob()
                 {
                     TargetPositions = targetPositions,
+                    IsPositionSet = isPositionSet,
+                    TargetGroupId = boidData.TargetGroupId,
                 };
                 JobHandle targetPositionJobHandle = targetPositionJob.ScheduleParallel(targetQuery, state.Dependency);
-                var obstaclePositionJob = new InitialPositionJob()
+                var obstaclePositionJob = new InitialObstaclePositionJob()
                 {
                     TargetPositions = obstaclePositions,
                 };
@@ -60,12 +63,15 @@ namespace BoidsECSSimulator
 
                 var boidMainJob = new BoidMainCalJob()
                 {
-                    BoidComponentDataHandle = SystemAPI.GetSharedComponentTypeHandle<BoidSharedComponentData>(),
+                    BoidSharedData = boidData,
+                    //BoidComponentDataHandle = SystemAPI.GetSharedComponentTypeHandle<BoidSharedComponentData>(),
                     BoidDataHandle = SystemAPI.GetComponentTypeHandle<BoidData>(),
                     LocalTransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     LocalToWorldHandle = SystemAPI.GetComponentTypeHandle<LocalToWorld>(),
                 };
                 JobHandle boidMainJobHandle = boidMainJob.ScheduleParallel(boidQuery, initHandle);
+                //处理目标
+
                 //处理障碍物碰撞检测
 
                 //移动boid实体
@@ -86,7 +92,21 @@ namespace BoidsECSSimulator
     }
 
     [BurstCompile]
-    partial struct InitialPositionJob : IJobEntity
+    partial struct InitialTargetPositionJob : IJobEntity
+    {
+        public NativeArray<float3> TargetPositions;
+        public NativeArray<bool> IsPositionSet;
+        public int TargetGroupId;
+
+        void Execute([EntityIndexInQuery] int entityIndexInQuery, ref BoidTarget targetData, in LocalToWorld localToWorld)
+        {
+            IsPositionSet[entityIndexInQuery] = targetData.TargetGroupId == TargetGroupId;
+            TargetPositions[entityIndexInQuery] = localToWorld.Position;
+        }
+    }
+
+    [BurstCompile]
+    partial struct InitialObstaclePositionJob : IJobEntity
     {
         public NativeArray<float3> TargetPositions;
         void Execute([EntityIndexInQuery] int entityIndexInQuery, in LocalToWorld localToWorld)
@@ -98,7 +118,8 @@ namespace BoidsECSSimulator
     [BurstCompile]
     unsafe struct BoidMainCalJob : IJobChunk
     {
-        public SharedComponentTypeHandle<BoidSharedComponentData> BoidComponentDataHandle;
+        public BoidSharedComponentData BoidSharedData;
+        //public SharedComponentTypeHandle<BoidSharedComponentData> BoidComponentDataHandle;
         public ComponentTypeHandle<BoidData> BoidDataHandle;
         [ReadOnly] 
         public ComponentTypeHandle<LocalTransform> LocalTransformHandle;
@@ -107,7 +128,7 @@ namespace BoidsECSSimulator
 
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            BoidSharedComponentData boidSharedData = chunk.GetSharedComponent(BoidComponentDataHandle);
+            //BoidSharedComponentData boidSharedData = chunk.GetSharedComponent(BoidComponentDataHandle);
             BoidData* boidDataArr = chunk.GetComponentDataPtrRW(ref BoidDataHandle);
             NativeArray<LocalTransform> localTransformArr = chunk.GetNativeArray(ref LocalTransformHandle);
             NativeArray<LocalToWorld> localToWorldArr = chunk.GetNativeArray(ref LocalToWorldHandle);
@@ -121,18 +142,18 @@ namespace BoidsECSSimulator
                 {
                     if (i == j)
                         continue;
-                    float3 offset = localTransformArr[i].Position - localTransformArr[j].Position;
+                    float3 offset = localTransformArr[j].Position - localTransformArr[i].Position;
                     float sqrDst = offset.x * offset.x + offset.y * offset.y + offset.z * offset.z;
-                    if (sqrDst < boidSharedData.perceptionRadius * boidSharedData.perceptionRadius)
+                    if (sqrDst < BoidSharedData.perceptionRadius * BoidSharedData.perceptionRadius)
                     {
                         boidDataArr[i].NumFlockmates += 1;
-                        boidDataArr[i].FlockHeading += boidDataArr[i].Forward;
+                        boidDataArr[i].FlockHeading += boidDataArr[j].Forward;
                         boidDataArr[i].FlockCentre += localTransformArr[j].Position;
-                        if (sqrDst < boidSharedData.avoidanceRadius * boidSharedData.avoidanceRadius)
+                        if (sqrDst < BoidSharedData.avoidanceRadius * BoidSharedData.avoidanceRadius)
                             boidDataArr[i].AvoidanceHeading -= offset / sqrDst;
                     }
                 }
-                boidDataArr[i].Acceleration = UpdateBoid(boidSharedData, boidDataArr[i], localTransformArr[i]);
+                boidDataArr[i].Acceleration = UpdateBoid(BoidSharedData, boidDataArr[i], localTransformArr[i]);
             }
 
         }
@@ -162,8 +183,16 @@ namespace BoidsECSSimulator
         private float3 SteerTowards(float3 vector, BoidSharedComponentData boidSharedData, BoidData boidData)
         {
             //目标方向和当前速度差值以得到所需的加速度向量
-            float3 v = math.normalize(vector) * boidSharedData.maxSpeed - boidData.Velocity;
+            float3 v = Normalize(vector) * boidSharedData.maxSpeed - boidData.Velocity;
             return ClampMagnitude(v, boidSharedData.maxSteerForce);
+        }
+
+        private float3 Normalize(float3 value)
+        {
+            float num = (float)math.sqrt(value.x * value.x + value.y * value.y + value.z * value.z);
+            if (num > 1E-05f)
+                return value / num;
+            return float3.zero;
         }
 
         public static float3 ClampMagnitude(float3 vector, float maxLength)
@@ -172,10 +201,13 @@ namespace BoidsECSSimulator
             if (num > maxLength * maxLength)
             {
                 float num2 = (float)math.sqrt(num);
-                float num3 = vector.x / num2;
-                float num4 = vector.y / num2;
-                float num5 = vector.z / num2;
-                return new float3(num3 * maxLength, num4 * maxLength, num5 * maxLength);
+                if (num2 > 0)
+                {
+                    float num3 = vector.x / num2;
+                    float num4 = vector.y / num2;
+                    float num5 = vector.z / num2;
+                    return new float3(num3 * maxLength, num4 * maxLength, num5 * maxLength);
+                }
             }
             return vector;
         }

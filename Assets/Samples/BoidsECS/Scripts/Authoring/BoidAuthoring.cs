@@ -21,6 +21,7 @@ namespace BoidsECSSimulator
         public float boundsRadius;
         public float collisionAvoidDst;
         public LayerMask obstacleLayerMask;
+        public int TargetGroupId;
 
         class BoidBaker : Baker<BoidAuthoring>
         {
@@ -42,11 +43,12 @@ namespace BoidsECSSimulator
                     boundsRadius = authoring.boundsRadius,
                     collisionAvoidDst = authoring.collisionAvoidDst,
                     obstacleLayerMask = authoring.obstacleLayerMask,
+                    TargetGroupId = authoring.TargetGroupId,
                 });
                 float startSpeed = (authoring.minSpeed + authoring.maxSpeed) / 2;
                 AddComponent(entity, new BoidData() {
-                    Forward = new float3(0, 0, 1),
-                    Velocity = new float3(0, 0, 1) * startSpeed,
+                    Forward = authoring.transform.forward,
+                    Velocity = authoring.transform.forward * startSpeed,
             });
 
             }
@@ -84,6 +86,8 @@ namespace BoidsECSSimulator
         public float boundsRadius;
         public float collisionAvoidDst;
         public int obstacleLayerMask;
+
+        public int TargetGroupId;
 
     }
 
