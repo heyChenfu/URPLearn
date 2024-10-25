@@ -108,7 +108,7 @@ namespace BoidsSimulator
 
         Vector3 GetAvoidDir()
         {
-            Vector3[] rayDirections = BoidDirectionHelper.Directions;
+            Vector3[] rayDirections = BoidDirectionHelper.GetDirectionsVector3S();
 
             for (int i = 0; i < rayDirections.Length; i++)
             {

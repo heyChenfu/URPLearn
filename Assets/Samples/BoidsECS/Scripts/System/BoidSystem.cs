@@ -6,6 +6,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.Physics;
 
 namespace BoidsECSSimulator
 {
@@ -24,12 +25,13 @@ namespace BoidsECSSimulator
             EntityQuery boidQuery = SystemAPI.QueryBuilder().WithAll<BoidSharedComponentData>().
                 WithAllRW<BoidData>().WithAllRW<LocalTransform>().WithAllRW<LocalToWorld>().Build();
             var targetQuery = SystemAPI.QueryBuilder().WithAll<BoidTarget, LocalToWorld>().Build();
-            var obstacleQuery = SystemAPI.QueryBuilder().WithAll<BoidObstacle, LocalToWorld>().Build();
 
             var world = state.WorldUnmanaged;
             state.EntityManager.GetAllUniqueSharedComponents(out NativeList<BoidSharedComponentData> uniqueBoidTypes, world.UpdateAllocator.ToAllocator);
+            PhysicsWorldSingleton physicsWorldSingleton = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+            CollisionWorld collisionWorld = physicsWorldSingleton.CollisionWorld;
+            NativeArray<float3> rayDirections = BoidDirectionHelper.GetDirectionsFloat3S();
             int targetCount = targetQuery.CalculateEntityCount();
-            int obstacleCount = obstacleQuery.CalculateEntityCount();
             float dt = math.min(0.05f, SystemAPI.Time.DeltaTime);
 
             //每次循环处理一组相同 Boid 配置的实体
@@ -45,8 +47,7 @@ namespace BoidsECSSimulator
 
                 var targetPositions = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(targetCount, ref world.UpdateAllocator);
                 var isPositionSet = CollectionHelper.CreateNativeArray<bool, RewindableAllocator>(targetCount, ref world.UpdateAllocator);
-                var obstaclePositions = CollectionHelper.CreateNativeArray<float3, RewindableAllocator>(obstacleCount, ref world.UpdateAllocator);
-
+                
                 var targetPositionJob = new InitialTargetPositionJob()
                 {
                     TargetPositions = targetPositions,
@@ -54,12 +55,6 @@ namespace BoidsECSSimulator
                     TargetGroupId = boidData.TargetGroupId,
                 };
                 JobHandle targetPositionJobHandle = targetPositionJob.ScheduleParallel(targetQuery, state.Dependency);
-                var obstaclePositionJob = new InitialObstaclePositionJob()
-                {
-                    TargetPositions = obstaclePositions,
-                };
-                JobHandle obstaclePositionJobHandle = obstaclePositionJob.ScheduleParallel(obstacleQuery, state.Dependency);
-                JobHandle initHandle = JobHandle.CombineDependencies(targetPositionJobHandle, obstaclePositionJobHandle);
 
                 var boidMainJob = new BoidMainCalJob()
                 {
@@ -69,17 +64,27 @@ namespace BoidsECSSimulator
                     LocalTransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     LocalToWorldHandle = SystemAPI.GetComponentTypeHandle<LocalToWorld>(),
                 };
-                JobHandle boidMainJobHandle = boidMainJob.ScheduleParallel(boidQuery, initHandle);
+                JobHandle boidMainJobHandle = boidMainJob.ScheduleParallel(boidQuery, targetPositionJobHandle);
                 //处理目标
-
+                var boidTargetJob = new BoidTargetJob()
+                {
+                    TargetPositions = targetPositions,
+                    IsPositionSet = isPositionSet,
+                };
+                JobHandle boidTargetJobHandle = boidTargetJob.ScheduleParallel(boidQuery, boidMainJobHandle);
                 //处理障碍物碰撞检测
-
+                var boidObstacleJob = new BoidObstacleJob()
+                {
+                    MyCollisionWorld = collisionWorld,
+                    RayDirections = rayDirections,
+                };
+                JobHandle boidObstacleJobHandle = boidObstacleJob.ScheduleParallel(boidQuery, boidTargetJobHandle);
                 //移动boid实体
-                var steerBoidJob = new SteerBoidJob()
+                var steerBoidJob = new BoidSteerJob()
                 {
                     deltaTime = dt,
                 };
-                var steerBoidJobHandle = steerBoidJob.ScheduleParallel(boidQuery, boidMainJobHandle);
+                var steerBoidJobHandle = steerBoidJob.ScheduleParallel(boidQuery, boidObstacleJobHandle);
 
                 state.Dependency = steerBoidJobHandle;
 
@@ -87,6 +92,7 @@ namespace BoidsECSSimulator
                 boidQuery.ResetFilter();
             }
             uniqueBoidTypes.Dispose();
+            rayDirections.Dispose(state.Dependency);
         }
 
     }
@@ -101,16 +107,6 @@ namespace BoidsECSSimulator
         void Execute([EntityIndexInQuery] int entityIndexInQuery, ref BoidTarget targetData, in LocalToWorld localToWorld)
         {
             IsPositionSet[entityIndexInQuery] = targetData.TargetGroupId == TargetGroupId;
-            TargetPositions[entityIndexInQuery] = localToWorld.Position;
-        }
-    }
-
-    [BurstCompile]
-    partial struct InitialObstaclePositionJob : IJobEntity
-    {
-        public NativeArray<float3> TargetPositions;
-        void Execute([EntityIndexInQuery] int entityIndexInQuery, in LocalToWorld localToWorld)
-        {
             TargetPositions[entityIndexInQuery] = localToWorld.Position;
         }
     }
@@ -170,9 +166,15 @@ namespace BoidsECSSimulator
                 float3 offsetToFlockmatesCentre = centreOfFlockmates - localTransform.Position;
 
                 //分别得到对齐,聚合,分离
-                var alignmentForce = SteerTowards(boidData.FlockHeading, boidSharedData, boidData) * boidSharedData.alignWeight;
-                var cohesionForce = SteerTowards(offsetToFlockmatesCentre, boidSharedData, boidData) * boidSharedData.cohesionWeight;
-                var seperationForce = SteerTowards(boidData.AvoidanceHeading, boidSharedData, boidData) * boidSharedData.seperateWeight;
+                var alignmentForce = CommonFunction.SteerTowards(
+                    boidData.FlockHeading, boidSharedData.maxSpeed, boidData.Velocity, boidSharedData.maxSteerForce) 
+                    * boidSharedData.alignWeight;
+                var cohesionForce = CommonFunction.SteerTowards(
+                    offsetToFlockmatesCentre, boidSharedData.maxSpeed, boidData.Velocity, boidSharedData.maxSteerForce) 
+                    * boidSharedData.cohesionWeight;
+                var seperationForce = CommonFunction.SteerTowards(
+                    boidData.AvoidanceHeading, boidSharedData.maxSpeed, boidData.Velocity, boidSharedData.maxSteerForce) 
+                    * boidSharedData.seperateWeight;
                 acceleration += alignmentForce;
                 acceleration += cohesionForce;
                 acceleration += seperationForce;
@@ -180,42 +182,87 @@ namespace BoidsECSSimulator
             return acceleration;
         }
 
-        private float3 SteerTowards(float3 vector, BoidSharedComponentData boidSharedData, BoidData boidData)
-        {
-            //目标方向和当前速度差值以得到所需的加速度向量
-            float3 v = Normalize(vector) * boidSharedData.maxSpeed - boidData.Velocity;
-            return ClampMagnitude(v, boidSharedData.maxSteerForce);
-        }
+    }
 
-        private float3 Normalize(float3 value)
-        {
-            float num = (float)math.sqrt(value.x * value.x + value.y * value.y + value.z * value.z);
-            if (num > 1E-05f)
-                return value / num;
-            return float3.zero;
-        }
+    [BurstCompile]
+    partial struct BoidTargetJob : IJobEntity 
+    {
+        public NativeArray<float3> TargetPositions;
+        public NativeArray<bool> IsPositionSet;
 
-        public static float3 ClampMagnitude(float3 vector, float maxLength)
+        void Execute([EntityIndexInQuery] int entityIndexInQuery,
+            in BoidSharedComponentData boidSharedData,
+            ref BoidData boidData,
+            ref LocalTransform localTransform)
         {
-            float num = vector.x * vector.x + vector.y * vector.y + vector.z * vector.z;
-            if (num > maxLength * maxLength)
+            for (int i = 0; i < IsPositionSet.Length; ++i)
             {
-                float num2 = (float)math.sqrt(num);
-                if (num2 > 0)
+                if (!IsPositionSet[i])
+                    continue;
+                float3 offsetToTarget = TargetPositions[i] - localTransform.Position;
+                boidData.Acceleration += CommonFunction.SteerTowards(
+                    offsetToTarget, boidSharedData.maxSpeed, boidData.Velocity, boidSharedData.maxSteerForce) 
+                    * boidSharedData.targetWeight;
+            }
+
+        }
+    }
+
+    [BurstCompile]
+    partial struct BoidObstacleJob : IJobEntity 
+    {
+        [ReadOnly] public CollisionWorld MyCollisionWorld;
+        public NativeArray<float3> RayDirections;
+        
+        void Execute([EntityIndexInQuery] int entityIndexInQuery,
+            in BoidSharedComponentData boidSharedData,
+            ref BoidData boidData,
+            ref LocalTransform localTransform)
+        {
+            var filter = new CollisionFilter { 
+                BelongsTo = default,
+                CollidesWith = (uint)1 << boidSharedData.obstacleLayerMask,
+            };
+            if(MyCollisionWorld.SphereCast(localTransform.Position, boidSharedData.boundsRadius, boidData.Forward, boidSharedData.collisionAvoidDst, filter))
+            {
+                float3 collisionAvoidDir = GetAvoidDir(boidSharedData, boidData, localTransform);
+                float3 collisionAvoidForce = CommonFunction.SteerTowards(collisionAvoidDir, boidSharedData.maxSpeed, boidData.Velocity, boidSharedData.maxSteerForce);
+                boidData.Acceleration += collisionAvoidForce;
+            }
+
+        }
+
+        float3 GetAvoidDir(in BoidSharedComponentData boidSharedData, BoidData boidData, LocalTransform localTransform)
+        {
+            for (int i = 0; i < RayDirections.Length; i++)
+            {
+                float3 dir = math.normalize(RayDirections[i]);
+                var ray = new RaycastInput
                 {
-                    float num3 = vector.x / num2;
-                    float num4 = vector.y / num2;
-                    float num5 = vector.z / num2;
-                    return new float3(num3 * maxLength, num4 * maxLength, num5 * maxLength);
+                    Start = localTransform.Position,
+                    End = localTransform.Position + dir * boidSharedData.collisionAvoidDst,
+                    Filter = new CollisionFilter
+                    {
+                        BelongsTo = default,
+                        CollidesWith = (uint)1 << boidSharedData.obstacleLayerMask,
+                        GroupIndex = 0,
+                    }
+                };
+
+                if (!MyCollisionWorld.CastRay(ray, out var hit))
+                {
+                    return dir; // 找到一个方向返回
                 }
             }
-            return vector;
+
+            return boidData.Forward; // 默认前进方向
         }
 
     }
 
+
     [BurstCompile]
-    partial struct SteerBoidJob : IJobEntity
+    partial struct BoidSteerJob : IJobEntity
     {
         public float deltaTime;
 

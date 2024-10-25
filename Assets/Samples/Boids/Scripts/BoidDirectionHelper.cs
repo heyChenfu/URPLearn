@@ -1,41 +1,64 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
+using Unity.Collections;
 
-public static class BoidDirectionHelper
+public class BoidDirectionHelper
 {
-
-    static int NumViewDirections = 300;
-    public static readonly Vector3[] Directions;
+    static readonly int NumViewDirections = 300;
+    //é»„é‡‘æ¯”ä¾‹
+    static readonly float GoldenRatio = 1.618f;
 
     /// <summary>
-    /// Ê¹ÓÃ»Æ½ğ±ÈÀıºÍÇò×ø±êÏµµÄ¼ÆËã·½Ê½£¬ÊÇÎªÁËÈ·±£ÕâĞ©·½ÏòÏòÁ¿ÔÚÇòÌå±íÃæ¾¡Á¿¾ùÔÈµØ·Ö²¼
+    /// ä½¿ç”¨é»„é‡‘æ¯”ä¾‹å’Œçƒåæ ‡ç³»çš„è®¡ç®—æ–¹å¼ï¼Œæ˜¯ä¸ºäº†ç¡®ä¿è¿™äº›æ–¹å‘å‘é‡åœ¨çƒä½“è¡¨é¢å°½é‡å‡åŒ€åœ°åˆ†å¸ƒ
     /// </summary>
-    static BoidDirectionHelper()
+    public static Vector3[] GetDirectionsVector3S()
     {
-        Directions = new Vector3[NumViewDirections];
+        var directions = new Vector3[NumViewDirections];
 
-        //»Æ½ğ±ÈÀı
-        float goldenRatio = 1.618f;
-        //¸ù¾İ»Æ½ğ±ÈÀıµÃµ½µÄ½Ç¶ÈÔöÁ¿
-        float angleIncrement = Mathf.PI * 2 * goldenRatio;
-
+        //æ ¹æ®é»„é‡‘æ¯”ä¾‹å¾—åˆ°çš„è§’åº¦å¢é‡
+        float angleIncrement = Mathf.PI * 2 * GoldenRatio;
         for (int i = 0; i < NumViewDirections; i++)
         {
-            float t = (float)i / NumViewDirections;
-            //Í¨¹ı·´ÓàÏÒº¯Êı¼ÆËã³ö´Ó Z ÖáÆ«ÀëµÄ½Ç¶È, ¼´ÇãĞ±½Ç
-            float inclination = Mathf.Acos(1 - 2 * t);
-            //¼ÆËã·½Î»½Ç, ¼´Î§ÈÆ Z ÖáĞı×ªµÄ½Ç¶È
-            float azimuth = angleIncrement * i;
-
-            //Çò×ø±êµ½Ö±½Ç×ø±êµÄ×ª»»¹«Ê½(ÕâÀïÎÒÃÇ¼ÙÉèr = 1, ÒòÎªÎÒÃÇ¹ØĞÄµÄÊÇ·½Ïò¶ø²»ÊÇ¾ßÌåµÄ¾àÀë)
-            //x = r * sin(¦È) * cos(¦Õ)
-            //y = r * sin(¦È) * sin(¦Õ)
-            //z = r * cos(¦È)
-            float x = Mathf.Sin(inclination) * Mathf.Cos(azimuth);
-            float y = Mathf.Sin(inclination) * Mathf.Sin(azimuth);
-            float z = Mathf.Cos(inclination);
-            Directions[i] = new Vector3(x, y, z);
+            Tuple<float, float, float> singleDirection = GetSingleDirection(i, angleIncrement);
+            directions[i] = new Vector3(singleDirection.Item1, singleDirection.Item2, singleDirection.Item3);
         }
+        return directions;
     }
+    
+    public static NativeArray<float3> GetDirectionsFloat3S()
+    {
+        NativeArray<float3> directions = new NativeArray<float3>(
+            NumViewDirections, Allocator.TempJob, NativeArrayOptions.ClearMemory);
+        
+        //æ ¹æ®é»„é‡‘æ¯”ä¾‹å¾—åˆ°çš„è§’åº¦å¢é‡
+        float angleIncrement = Mathf.PI * 2 * GoldenRatio;
+        for (int i = 0; i < NumViewDirections; i++)
+        {
+            Tuple<float, float, float> singleDirection = GetSingleDirection(i, angleIncrement);
+            directions[i] = new float3(singleDirection.Item1, singleDirection.Item2, singleDirection.Item3);
+        }
+        return directions;
+    }
+
+    private static Tuple<float, float, float> GetSingleDirection(int i, float angleIncrement)
+    {
+        float t = (float)i / NumViewDirections;
+        //é€šè¿‡åä½™å¼¦å‡½æ•°è®¡ç®—å‡ºä» Z è½´åç¦»çš„è§’åº¦, å³å€¾æ–œè§’
+        float inclination = Mathf.Acos(1 - 2 * t);
+        //è®¡ç®—æ–¹ä½è§’, å³å›´ç»• Z è½´æ—‹è½¬çš„è§’åº¦
+        float azimuth = angleIncrement * i;
+
+        //çƒåæ ‡åˆ°ç›´è§’åæ ‡çš„è½¬æ¢å…¬å¼(è¿™é‡Œæˆ‘ä»¬å‡è®¾r = 1, å› ä¸ºæˆ‘ä»¬å…³å¿ƒçš„æ˜¯æ–¹å‘è€Œä¸æ˜¯å…·ä½“çš„è·ç¦»)
+        //x = r * sin(Î¸) * cos(Ï†)
+        //y = r * sin(Î¸) * sin(Ï†)
+        //z = r * cos(Î¸)
+        float x = Mathf.Sin(inclination) * Mathf.Cos(azimuth);
+        float y = Mathf.Sin(inclination) * Mathf.Sin(azimuth);
+        float z = Mathf.Cos(inclination);
+        return new Tuple<float, float, float>(x, y, z);
+    }
+    
 }

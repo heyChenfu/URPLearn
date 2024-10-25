@@ -383,10 +383,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00f0c128af8242f4ebe4739d45dac398, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minSpeed: 1
-  maxSpeed: 3
+  minSpeed: 20
+  maxSpeed: 30
   perceptionRadius: 2.5
-  avoidanceRadius: 0.5
+  avoidanceRadius: 2
   maxSteerForce: 8
   alignWeight: 2
   cohesionWeight: 1
@@ -398,6 +398,7 @@ MonoBehaviour:
   obstacleLayerMask:
     serializedVersion: 2
     m_Bits: 256
+  TargetGroupId: 1
 --- !u!1 &9044839443509003133
 GameObject:
   m_ObjectHideFlags: 0
