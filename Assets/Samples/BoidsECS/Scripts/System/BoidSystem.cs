@@ -212,7 +212,7 @@ namespace BoidsECSSimulator
     partial struct BoidObstacleJob : IJobEntity 
     {
         [ReadOnly] public CollisionWorld MyCollisionWorld;
-        public NativeArray<float3> RayDirections;
+        [ReadOnly] public NativeArray<float3> RayDirections;
         
         void Execute([EntityIndexInQuery] int entityIndexInQuery,
             in BoidSharedComponentData boidSharedData,
@@ -220,8 +220,8 @@ namespace BoidsECSSimulator
             ref LocalTransform localTransform)
         {
             var filter = new CollisionFilter { 
-                BelongsTo = default,
-                CollidesWith = (uint)1 << boidSharedData.obstacleLayerMask,
+                BelongsTo = (uint)boidSharedData.obstacleLayerMask,
+                CollidesWith = (uint)boidSharedData.obstacleLayerMask,
             };
             if(MyCollisionWorld.SphereCast(localTransform.Position, boidSharedData.boundsRadius, boidData.Forward, boidSharedData.collisionAvoidDst, filter))
             {
@@ -243,8 +243,8 @@ namespace BoidsECSSimulator
                     End = localTransform.Position + dir * boidSharedData.collisionAvoidDst,
                     Filter = new CollisionFilter
                     {
-                        BelongsTo = default,
-                        CollidesWith = (uint)1 << boidSharedData.obstacleLayerMask,
+                        BelongsTo = (uint)boidSharedData.obstacleLayerMask,
+                        CollidesWith = (uint)boidSharedData.obstacleLayerMask,
                         GroupIndex = 0,
                     }
                 };

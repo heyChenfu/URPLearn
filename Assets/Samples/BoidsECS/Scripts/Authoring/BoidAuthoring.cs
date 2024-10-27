@@ -28,7 +28,7 @@ namespace BoidsECSSimulator
             public override void Bake(BoidAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Renderable | TransformUsageFlags.WorldSpace);
-                AddSharedComponent(entity, new BoidSharedComponentData
+                var boidShareData = new BoidSharedComponentData
                 {
                     minSpeed = authoring.minSpeed,
                     maxSpeed = authoring.maxSpeed,
@@ -42,9 +42,10 @@ namespace BoidsECSSimulator
                     avoidCollisionWeight = authoring.avoidCollisionWeight,
                     boundsRadius = authoring.boundsRadius,
                     collisionAvoidDst = authoring.collisionAvoidDst,
-                    obstacleLayerMask = authoring.obstacleLayerMask,
+                    obstacleLayerMask = authoring.obstacleLayerMask.value,
                     TargetGroupId = authoring.TargetGroupId,
-                });
+                };
+                AddSharedComponent(entity, boidShareData);
                 float startSpeed = (authoring.minSpeed + authoring.maxSpeed) / 2;
                 AddComponent(entity, new BoidData() {
                     Forward = authoring.transform.forward,
