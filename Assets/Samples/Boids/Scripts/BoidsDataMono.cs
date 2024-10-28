@@ -8,9 +8,9 @@ namespace BoidsSimulator
     {
         public float minSpeed = 2;
         public float maxSpeed = 5;
-        public float perceptionRadius = 2.5f; //伙伴判定半径
-        public float avoidanceRadius = 1; //规避判定半径
-        public float maxSteerForce = 3; //最大转向力
+        public float perceptionRadius = 2.5f; //浼欎即鍒ゅ畾鍗婂緞
+        public float avoidanceRadius = 1; //瑙勯伩鍒ゅ畾鍗婂緞
+        public float maxSteerForce = 3; //鏈�澶ц浆鍚戝姏
 
         public float alignWeight = 1;
         public float cohesionWeight = 1;

@@ -1130,15 +1130,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   minSpeed: 20
-  maxSpeed: 30
-  perceptionRadius: 4
-  avoidanceRadius: 2
+  maxSpeed: 25
+  perceptionRadius: 5
+  avoidanceRadius: 2.5
   maxSteerForce: 8
   alignWeight: 2
   cohesionWeight: 1
   seperateWeight: 2.5
   targetWeight: 2
-  boundsRadius: 20
+  boundsRadius: 5
   avoidCollisionWeight: 20
   collisionAvoidDst: 5
   obstacleMask:
@@ -1157,8 +1157,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   BoidObj: {fileID: 7692798108756314477, guid: b7c78de6538df224496df367418efdea, type: 3}
-  InstantiateCount: 50
-  InitRange: 10
+  InstantiateCount: 300
+  InitRange: 30
   TargetObj: {fileID: 1683440614}
 --- !u!4 &1112432632
 Transform:
@@ -1602,7 +1602,7 @@ Transform:
   m_GameObject: {fileID: 1683440614}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.1, y: -37.5, z: -0.5}
+  m_LocalPosition: {x: -3.1, y: -37.5, z: -1.7}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children: []
