@@ -13,15 +13,27 @@ namespace BoidsECSSimulator
     [BurstCompile]
     public partial struct BoidSystem : ISystem
     {
+        private NativeStream _rayStream;
+        
         public void OnCreate(ref SystemState state) 
         {
             state.RequireForUpdate(state.GetEntityQuery(typeof(BoidSharedComponentData)));
+            
+            _rayStream = new NativeStream(1, Allocator.Persistent);
+            
         }
 
-        public void OnDestroy(ref SystemState state) { }
+        public void OnDestroy(ref SystemState state)
+        {
+            if (_rayStream.IsCreated) _rayStream.Dispose();
+            
+        }
 
         public void OnUpdate(ref SystemState state)
         {
+            _rayStream.Dispose();
+            _rayStream = new NativeStream(state.EntityManager.UniversalQuery.CalculateEntityCount(), Allocator.TempJob);
+            
             EntityQuery boidQuery = SystemAPI.QueryBuilder().WithAll<BoidSharedComponentData>().
                 WithAllRW<BoidData>().WithAllRW<LocalTransform>().WithAllRW<LocalToWorld>().Build();
             var targetQuery = SystemAPI.QueryBuilder().WithAll<BoidTarget, LocalToWorld>().Build();
@@ -77,6 +89,7 @@ namespace BoidsECSSimulator
                 {
                     MyCollisionWorld = collisionWorld,
                     RayDirections = rayDirections,
+                    RayStreamWriter = _rayStream.AsWriter()
                 };
                 JobHandle boidObstacleJobHandle = boidObstacleJob.ScheduleParallel(boidQuery, boidTargetJobHandle);
                 //移动boid实体
@@ -87,14 +100,35 @@ namespace BoidsECSSimulator
                 var steerBoidJobHandle = steerBoidJob.ScheduleParallel(boidQuery, boidObstacleJobHandle);
 
                 state.Dependency = steerBoidJobHandle;
+                state.Dependency.Complete();
 
                 boidQuery.AddDependency(state.Dependency);
                 boidQuery.ResetFilter();
             }
             uniqueBoidTypes.Dispose();
             rayDirections.Dispose(state.Dependency);
+            DrawDebugLines();
         }
 
+        private void DrawDebugLines()
+        {
+            // 使用 Debug.DrawLine 在主线程绘制调试线
+            var reader = _rayStream.AsReader();
+            for (int i = 0; i < reader.ForEachCount; i++)
+            {
+                reader.BeginForEachIndex(i);
+
+                while (reader.RemainingItemCount > 0)
+                {
+                    float3 start = reader.Read<float3>();
+                    float3 end = reader.Read<float3>();
+                    UnityEngine.Debug.DrawLine(start, end, UnityEngine.Color.red, 0.01f);
+                }
+
+                reader.EndForEachIndex();
+            }
+        }
+        
     }
 
     [BurstCompile]
@@ -213,44 +247,48 @@ namespace BoidsECSSimulator
     {
         [ReadOnly] public CollisionWorld MyCollisionWorld;
         [ReadOnly] public NativeArray<float3> RayDirections;
+        public NativeStream.Writer RayStreamWriter;
         
         void Execute([EntityIndexInQuery] int entityIndexInQuery,
             in BoidSharedComponentData boidSharedData,
             ref BoidData boidData,
-            ref LocalTransform localTransform)
+            ref LocalTransform localTransform,
+            [ReadOnly] ref LocalToWorld localToWorld)
         {
-            var filter = new CollisionFilter { 
-                BelongsTo = (uint)boidSharedData.obstacleLayerMask,
+            CollisionFilter filter = new CollisionFilter { 
+                BelongsTo = (uint)boidSharedData.boidLayerMask,
                 CollidesWith = (uint)boidSharedData.obstacleLayerMask,
             };
             if(MyCollisionWorld.SphereCast(localTransform.Position, boidSharedData.boundsRadius, boidData.Forward, boidSharedData.collisionAvoidDst, filter))
             {
-                float3 collisionAvoidDir = GetAvoidDir(boidSharedData, boidData, localTransform);
-                float3 collisionAvoidForce = CommonFunction.SteerTowards(collisionAvoidDir, boidSharedData.maxSpeed, boidData.Velocity, boidSharedData.maxSteerForce);
+                float3 collisionAvoidDir = GetAvoidDir(entityIndexInQuery, boidSharedData, boidData, localTransform, ref localToWorld, filter);
+                float3 collisionAvoidForce = CommonFunction.SteerTowards(collisionAvoidDir, boidSharedData.maxSpeed, 
+                    boidData.Velocity, boidSharedData.maxSteerForce)* boidSharedData.avoidCollisionWeight;
                 boidData.Acceleration += collisionAvoidForce;
             }
 
         }
 
-        float3 GetAvoidDir(in BoidSharedComponentData boidSharedData, BoidData boidData, LocalTransform localTransform)
+        float3 GetAvoidDir(int entityIndexInQuery,in BoidSharedComponentData boidSharedData, BoidData boidData, LocalTransform localTransform, 
+            ref LocalToWorld localToWorld, CollisionFilter filter)
         {
             for (int i = 0; i < RayDirections.Length; i++)
             {
-                float3 dir = math.normalize(RayDirections[i]);
+                float3 dir = RayDirections[i];
+                dir = math.mul(localToWorld.Value, new float4(dir, 0)).xyz;
                 var ray = new RaycastInput
                 {
                     Start = localTransform.Position,
                     End = localTransform.Position + dir * boidSharedData.collisionAvoidDst,
-                    Filter = new CollisionFilter
-                    {
-                        BelongsTo = (uint)boidSharedData.obstacleLayerMask,
-                        CollidesWith = (uint)boidSharedData.obstacleLayerMask,
-                        GroupIndex = 0,
-                    }
+                    Filter = filter
                 };
 
                 if (!MyCollisionWorld.CastRay(ray, out var hit))
                 {
+                    RayStreamWriter.BeginForEachIndex(entityIndexInQuery);
+                    RayStreamWriter.Write(ray.Start);
+                    RayStreamWriter.Write(ray.End);
+                    RayStreamWriter.EndForEachIndex();
                     return dir; // 找到一个方向返回
                 }
             }

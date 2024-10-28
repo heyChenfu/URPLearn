@@ -20,6 +20,7 @@ namespace BoidsECSSimulator
         public float avoidCollisionWeight;
         public float boundsRadius;
         public float collisionAvoidDst;
+        public LayerMask boidLayerMask;
         public LayerMask obstacleLayerMask;
         public int TargetGroupId;
 
@@ -42,6 +43,7 @@ namespace BoidsECSSimulator
                     avoidCollisionWeight = authoring.avoidCollisionWeight,
                     boundsRadius = authoring.boundsRadius,
                     collisionAvoidDst = authoring.collisionAvoidDst,
+                    boidLayerMask = authoring.boidLayerMask,
                     obstacleLayerMask = authoring.obstacleLayerMask.value,
                     TargetGroupId = authoring.TargetGroupId,
                 };
@@ -86,6 +88,7 @@ namespace BoidsECSSimulator
 
         public float boundsRadius;
         public float collisionAvoidDst;
+        public int boidLayerMask;
         public int obstacleLayerMask;
 
         public int TargetGroupId;

@@ -393,8 +393,11 @@ MonoBehaviour:
   seperateWeight: 2.5
   targetWeight: 2
   avoidCollisionWeight: 20
-  boundsRadius: 20
-  collisionAvoidDst: 20
+  boundsRadius: 10
+  collisionAvoidDst: 10
+  boidLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
   obstacleLayerMask:
     serializedVersion: 2
     m_Bits: 256
