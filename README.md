@@ -3,8 +3,8 @@
 ## 介绍
 Unity URP学习项目
 
-### Boid模拟
-根据 https://github.com/SebLague/Boids 提供的教程学习Boid模拟
+### BoidECS
+使用Entities加Job的Boid群体行为算法, 模拟鱼群效果
 ![效果图](images/boid效果.gif)
 ### BatchRendererGroupTest
 BatchRendererGroup+Animation Texture+JobSystem+RVO大批量角色渲染

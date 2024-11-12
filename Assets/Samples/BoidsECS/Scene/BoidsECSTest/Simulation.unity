@@ -1142,9 +1142,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Prefab: {fileID: 7692798108756314477, guid: eb2920d0e3d415443b0ea83786f03176, type: 3}
-  SpawnNumber: 100
+  SpawnNumber: 1000
   SpawnScale: 20
-  SpawnRange: 10
+  SpawnRange: 50
 --- !u!4 &1597642613
 Transform:
   m_ObjectHideFlags: 0
@@ -1784,7 +1784,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -0.01, y: -1.24, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6672401958083003376}
