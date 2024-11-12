@@ -1131,7 +1131,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minSpeed: 20
   maxSpeed: 25
-  perceptionRadius: 5
+  perceptionRadius: 10
   avoidanceRadius: 2.5
   maxSteerForce: 8
   alignWeight: 2
@@ -1157,8 +1157,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   BoidObj: {fileID: 7692798108756314477, guid: b7c78de6538df224496df367418efdea, type: 3}
-  InstantiateCount: 300
-  InitRange: 30
+  InstantiateCount: 20
+  InitRange: 10
   TargetObj: {fileID: 1683440614}
 --- !u!4 &1112432632
 Transform:

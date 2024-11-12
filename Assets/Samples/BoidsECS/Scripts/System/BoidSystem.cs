@@ -221,15 +221,15 @@ namespace BoidsECSSimulator
     [BurstCompile]
     partial struct BoidTargetJob : IJobEntity 
     {
-        public NativeArray<float3> TargetPositions;
-        public NativeArray<bool> IsPositionSet;
+        [ReadOnly] public NativeArray<float3> TargetPositions;
+        [ReadOnly] public NativeArray<bool> IsPositionSet;
 
         void Execute([EntityIndexInQuery] int entityIndexInQuery,
             in BoidSharedComponentData boidSharedData,
             ref BoidData boidData,
             ref LocalTransform localTransform)
         {
-            for (int i = 0; i < IsPositionSet.Length; ++i)
+            for (int i = 0; i < TargetPositions.Length; ++i)
             {
                 if (!IsPositionSet[i])
                     continue;
