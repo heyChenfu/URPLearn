@@ -38,57 +38,79 @@ public class LegStepper : MonoBehaviour
         this.wantStepAtAngle = wantStepAtAngle;
     }
 
-    public void Move()
+    // public void Move()
+    // {
+    //     if (!Moving)
+    //     {
+    //         Vector3 pos = Vector3.ProjectOnPlane(transform.position, homeTransform.up);
+    //         Vector3 homePos = Vector3.ProjectOnPlane(homeTransform.position, homeTransform.up);
+    //         float sqrDist = Vector3.SqrMagnitude(pos - homePos);
+    //         float angleFromHome = Quaternion.Angle(transform.rotation, homeTransform.rotation);
+    //
+    //         if (sqrDist > wantStepAtDistance * wantStepAtDistance || angleFromHome > wantStepAtAngle)
+    //         {
+    //             Vector3 endPos;
+    //             Vector3 endNormal;
+    //             if(GetGroundedEndPosition(out endPos, out endNormal))
+    //             {
+    //                 EndPoint = endPos;
+    //                 Quaternion endRot = Quaternion.LookRotation(Vector3.ProjectOnPlane(homeTransform.forward, endNormal), endNormal);
+    //                 StartCoroutine(MoveToHome(endPos, endRot));
+    //             }
+    //         }
+    //     }
+    // }
+    
+    void Update()
     {
-        if (!Moving)
-        {
-            Vector3 pos = Vector3.ProjectOnPlane(transform.position, homeTransform.up);
-            Vector3 homePos = Vector3.ProjectOnPlane(homeTransform.position, homeTransform.up);
-            float sqrDist = Vector3.SqrMagnitude(pos - homePos);
-            float angleFromHome = Quaternion.Angle(transform.rotation, homeTransform.rotation);
+        // If we are already moving, don't start another move
+        if (Moving) return;
 
-            if (sqrDist > wantStepAtDistance * wantStepAtDistance || angleFromHome > wantStepAtAngle)
-            {
-                Vector3 endPos;
-                Vector3 endNormal;
-                if(GetGroundedEndPosition(out endPos, out endNormal))
-                {
-                    EndPoint = endPos;
-                    Quaternion endRot = Quaternion.LookRotation(Vector3.ProjectOnPlane(homeTransform.forward, endNormal), endNormal);
-                    StartCoroutine(MoveToHome(endPos, endRot));
-                }
-            }
+        float distFromHome = Vector3.Distance(transform.position, homeTransform.position);
+
+        // If we are too far off in position or rotation
+        if (distFromHome > wantStepAtDistance)
+        {
+            // Start the step coroutine
+            StartCoroutine(MoveToHome());
         }
     }
 
-    IEnumerator MoveToHome(Vector3 endPoint, Quaternion endRot)
+    // Coroutines must return an IEnumerator
+    IEnumerator MoveToHome()
     {
+        // Indicate we're moving (used later)
         Moving = true;
 
+        // Store the initial conditions
         Quaternion startRot = transform.rotation;
         Vector3 startPoint = transform.position;
 
-        Vector3 centerPoint = (startPoint + endPoint) / 2;
-        centerPoint += homeTransform.up * Vector3.Distance(startPoint, endPoint) * stepHeight;
+        Quaternion endRot = homeTransform.rotation;
+        Vector3 endPoint = homeTransform.position;
 
+        // Time since step started
         float timeElapsed = 0;
 
+        // Here we use a do-while loop so the normalized time goes past 1.0 on the last iteration,
+        // placing us at the end position before ending.
         do
         {
+            // Add time since last frame to the time elapsed
             timeElapsed += Time.deltaTime;
-            float normalizedTime = Easing.EaseInOutCubic(timeElapsed / moveDuration);
 
-            transform.position = Vector3.Lerp(
-                Vector3.Lerp(startPoint, centerPoint, normalizedTime),
-                Vector3.Lerp(centerPoint, endPoint, normalizedTime),
-                normalizedTime);
+            float normalizedTime = timeElapsed / moveDuration;
 
-            transform.rotation = Quaternion.Lerp(startRot, endRot, normalizedTime);
+            // Interpolate position and rotation
+            transform.position = Vector3.Lerp(startPoint, endPoint,normalizedTime);
+            transform.rotation = Quaternion.Slerp(startRot, endRot, normalizedTime);
 
+            // Wait for one frame
             yield return null;
         }
         while (timeElapsed < moveDuration);
 
+        // Done moving
         Moving = false;
     }
 

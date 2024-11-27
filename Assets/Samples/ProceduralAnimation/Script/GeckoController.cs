@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class GeckoController : MonoBehaviour
@@ -15,10 +16,11 @@ public class GeckoController : MonoBehaviour
     [SerializeField] Transform rightEyeBone;
 
     [SerializeField] float eyeTrackingSpeed;
-    [SerializeField] float leftEyeMaxYRotation;
-    [SerializeField] float leftEyeMinYRotation;
-    [SerializeField] float rightEyeMaxYRotation;
-    [SerializeField] float rightEyeMinYRotation;
+    //左右眼最大最小Y旋转
+    [SerializeField,Range(-180, 180)] float leftEyeMaxYRotation;
+    [SerializeField,Range(-180, 180)] float leftEyeMinYRotation;
+    [SerializeField,Range(-180, 180)] float rightEyeMaxYRotation;
+    [SerializeField,Range(-180, 180)] float rightEyeMinYRotation;
 
     [SerializeField] LegStepper frontLeftLegStepper;
     [SerializeField] LegStepper frontRightLegStepper;
@@ -56,11 +58,13 @@ public class GeckoController : MonoBehaviour
     {
         Vector3 targetWorldLookDir = target.position - headBone.position;
         //旋转约束
-        targetWorldLookDir = Vector3.RotateTowards(transform.forward, targetWorldLookDir, Mathf.Deg2Rad * headMaxTurnAngle, 0);
+        targetWorldLookDir = Vector3.RotateTowards(transform.forward, targetWorldLookDir, 
+            Mathf.Deg2Rad * headMaxTurnAngle/*允许此旋转的最大角度*/, 0);
         //四元数.LookRotation方法。此方法采用向前和向上方向，并输出一个旋转
         Quaternion targetLocalRotation = Quaternion.LookRotation(targetWorldLookDir, transform.up);
         //frame rate independent damping
         float fDamping = 1 - Mathf.Exp(-headTurnSpeed * Time.deltaTime);
+        //但由于四元数表示旋转, 使用球形线性插值
         headBone.rotation = Quaternion.Slerp(headBone.rotation, targetLocalRotation, fDamping);
 
     }
@@ -68,11 +72,9 @@ public class GeckoController : MonoBehaviour
     void EyesTracking()
     {
         Quaternion targetEyeRotation = Quaternion.LookRotation(target.position - headBone.position, Vector3.up);
-        leftEyeBone.rotation = Quaternion.Slerp(leftEyeBone.rotation, targetEyeRotation,
-            1 - Mathf.Exp(-eyeTrackingSpeed * Time.deltaTime));
-        rightEyeBone.rotation = Quaternion.Slerp(rightEyeBone.rotation, targetEyeRotation,
-            1 - Mathf.Exp(-eyeTrackingSpeed * Time.deltaTime));
-        
+        float fDamping = 1 - Mathf.Exp(-eyeTrackingSpeed * Time.deltaTime);
+        leftEyeBone.rotation = Quaternion.Slerp(leftEyeBone.rotation, targetEyeRotation, fDamping);
+        rightEyeBone.rotation = Quaternion.Slerp(rightEyeBone.rotation, targetEyeRotation, fDamping);
         //给眼睛添加局部旋转角度约束
         float leftEyeCurrentYRotation = leftEyeBone.localEulerAngles.y;
         float rightEyeCurrentYRotation = rightEyeBone.localEulerAngles.y;
@@ -152,21 +154,21 @@ public class GeckoController : MonoBehaviour
             yield break;
         while (true)
         {
-            do
-            {
-                frontLeftLegStepper.Move();
-                backRightLegStepper.Move();
-                yield return null;
-            }
-            while (frontLeftLegStepper.Moving || backRightLegStepper.Moving);
-
-            do
-            {
-                frontRightLegStepper.Move();
-                backLeftLegStepper.Move();
-                yield return null;
-            }
-            while (frontRightLegStepper.Moving || backLeftLegStepper.Moving);
+            // do
+            // {
+            //     frontLeftLegStepper.Move();
+            //     backRightLegStepper.Move();
+            //     yield return null;
+            // }
+            // while (frontLeftLegStepper.Moving || backRightLegStepper.Moving);
+            //
+            // do
+            // {
+            //     frontRightLegStepper.Move();
+            //     backLeftLegStepper.Move();
+            //     yield return null;
+            // }
+            // while (frontRightLegStepper.Moving || backLeftLegStepper.Moving);
         }
     }
 }

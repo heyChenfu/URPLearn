@@ -1,7 +1,7 @@
-# URPLearn
+# UnityPractice
 
 ## 介绍
-Unity URP学习项目
+Unity学习项目
 
 ### BoidECS
 使用Entities加Job的Boid群体行为算法, 模拟鱼群效果
