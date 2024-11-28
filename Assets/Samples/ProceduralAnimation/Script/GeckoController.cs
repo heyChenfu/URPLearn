@@ -49,7 +49,7 @@ public class GeckoController : MonoBehaviour
 
     void LateUpdate()
     {
-        //RootMotionUpdate();
+        RootMotionUpdate();
         HeadTracking();
         EyesTracking();
     }
@@ -128,7 +128,7 @@ public class GeckoController : MonoBehaviour
         transform.Rotate(0, Time.deltaTime * currentAngularVelocity, 0, Space.World);
 
         Vector3 targetVelocity = Vector3.zero;
-        if (Mathf.Abs(angleToTarget) < 90)
+        if (Mathf.Abs(angleToTarget) < 60)
         {
             float disToTarget = Vector3.Distance(transform.position, target.position);
             if (disToTarget > maxDistToTarget)
@@ -154,21 +154,22 @@ public class GeckoController : MonoBehaviour
             yield break;
         while (true)
         {
-            // do
-            // {
-            //     frontLeftLegStepper.Move();
-            //     backRightLegStepper.Move();
-            //     yield return null;
-            // }
-            // while (frontLeftLegStepper.Moving || backRightLegStepper.Moving);
-            //
-            // do
-            // {
-            //     frontRightLegStepper.Move();
-            //     backLeftLegStepper.Move();
-            //     yield return null;
-            // }
-            // while (frontRightLegStepper.Moving || backLeftLegStepper.Moving);
+            //避免四肢同时运动
+            do
+            {
+                frontLeftLegStepper.MoveV1();
+                backRightLegStepper.MoveV1();
+                yield return null;
+            }
+            while (frontLeftLegStepper.Moving || backRightLegStepper.Moving);
+            
+            do
+            {
+                frontRightLegStepper.MoveV1();
+                backLeftLegStepper.MoveV1();
+                yield return null;
+            }
+            while (frontRightLegStepper.Moving || backLeftLegStepper.Moving);
         }
     }
 }

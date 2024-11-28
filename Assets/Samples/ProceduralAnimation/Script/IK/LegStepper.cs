@@ -5,6 +5,7 @@ using UnityEngine;
 public class LegStepper : MonoBehaviour
 {
     [SerializeField] private Transform homeTransform;
+    //和Honme多长距离后移动
     [SerializeField] private float wantStepAtDistance;
     [SerializeField] private float moveDuration;
     [SerializeField] float stepOvershootFraction;
@@ -37,31 +38,8 @@ public class LegStepper : MonoBehaviour
         this.overshootFromHome = overshootFromHome;
         this.wantStepAtAngle = wantStepAtAngle;
     }
-
-    // public void Move()
-    // {
-    //     if (!Moving)
-    //     {
-    //         Vector3 pos = Vector3.ProjectOnPlane(transform.position, homeTransform.up);
-    //         Vector3 homePos = Vector3.ProjectOnPlane(homeTransform.position, homeTransform.up);
-    //         float sqrDist = Vector3.SqrMagnitude(pos - homePos);
-    //         float angleFromHome = Quaternion.Angle(transform.rotation, homeTransform.rotation);
-    //
-    //         if (sqrDist > wantStepAtDistance * wantStepAtDistance || angleFromHome > wantStepAtAngle)
-    //         {
-    //             Vector3 endPos;
-    //             Vector3 endNormal;
-    //             if(GetGroundedEndPosition(out endPos, out endNormal))
-    //             {
-    //                 EndPoint = endPos;
-    //                 Quaternion endRot = Quaternion.LookRotation(Vector3.ProjectOnPlane(homeTransform.forward, endNormal), endNormal);
-    //                 StartCoroutine(MoveToHome(endPos, endRot));
-    //             }
-    //         }
-    //     }
-    // }
     
-    void Update()
+    public void MoveV1()
     {
         // If we are already moving, don't start another move
         if (Moving) return;
@@ -72,12 +50,11 @@ public class LegStepper : MonoBehaviour
         if (distFromHome > wantStepAtDistance)
         {
             // Start the step coroutine
-            StartCoroutine(MoveToHome());
+            StartCoroutine(MoveCoroutine());
         }
     }
 
-    // Coroutines must return an IEnumerator
-    IEnumerator MoveToHome()
+    IEnumerator MoveToHome(Vector3 endPoint, Quaternion endRot)
     {
         // Indicate we're moving (used later)
         Moving = true;
@@ -85,9 +62,6 @@ public class LegStepper : MonoBehaviour
         // Store the initial conditions
         Quaternion startRot = transform.rotation;
         Vector3 startPoint = transform.position;
-
-        Quaternion endRot = homeTransform.rotation;
-        Vector3 endPoint = homeTransform.position;
 
         // Time since step started
         float timeElapsed = 0;
@@ -113,7 +87,81 @@ public class LegStepper : MonoBehaviour
         // Done moving
         Moving = false;
     }
+    
+    IEnumerator MoveCoroutine()
+    {
+        Moving = true;
 
+        Vector3 startPoint = transform.position;
+        Quaternion startRot = transform.rotation;
+
+        Quaternion endRot = homeTransform.rotation;
+
+        // Directional vector from the foot to the home position
+        Vector3 towardHome = (homeTransform.position - transform.position);
+        // Total distnace to overshoot by   
+        float overshootDistance = wantStepAtDistance * stepOvershootFraction;
+        Vector3 overshootVector = towardHome * overshootDistance;
+        // Since we don't ground the point in this simplified implementation,
+        // we restrict the overshoot vector to be level with the ground
+        // by projecting it on the world XZ plane.
+        overshootVector = Vector3.ProjectOnPlane(overshootVector, Vector3.up);
+
+        // Apply the overshoot
+        Vector3 endPoint = homeTransform.position + overshootVector;
+
+        // We want to pass through the center point
+        Vector3 centerPoint = (startPoint + endPoint) / 2;
+        // But also lift off, so we move it up by half the step distance (arbitrarily)
+        centerPoint += homeTransform.up * Vector3.Distance(startPoint, endPoint) * 2 / 3;
+
+        float timeElapsed = 0;
+        do
+        {
+            timeElapsed += Time.deltaTime;
+            float normalizedTime = timeElapsed / moveDuration;
+            normalizedTime = Easing.EaseInOutCubic(normalizedTime);
+            
+            // 两次线性插值间接地实现二次贝塞尔曲线的效果
+            transform.position =
+                Vector3.Lerp(
+                    Vector3.Lerp(startPoint, centerPoint, normalizedTime),
+                    Vector3.Lerp(centerPoint, endPoint, normalizedTime),
+                    normalizedTime
+                );
+
+            transform.rotation = Quaternion.Slerp(startRot, endRot, normalizedTime);
+
+            yield return null;
+        }
+        while (timeElapsed < moveDuration);
+
+        Moving = false;
+    }
+
+    public void MoveV2()
+    {
+        if (!Moving)
+        {
+            Vector3 pos = Vector3.ProjectOnPlane(transform.position, homeTransform.up);
+            Vector3 homePos = Vector3.ProjectOnPlane(homeTransform.position, homeTransform.up);
+            float sqrDist = Vector3.SqrMagnitude(pos - homePos);
+            float angleFromHome = Quaternion.Angle(transform.rotation, homeTransform.rotation);
+    
+            if (sqrDist > wantStepAtDistance * wantStepAtDistance || angleFromHome > wantStepAtAngle)
+            {
+                Vector3 endPos;
+                Vector3 endNormal;
+                if(GetGroundedEndPosition(out endPos, out endNormal))
+                {
+                    EndPoint = endPos;
+                    Quaternion endRot = Quaternion.LookRotation(Vector3.ProjectOnPlane(homeTransform.forward, endNormal), endNormal);
+                    StartCoroutine(MoveToHome(endPos, endRot));
+                }
+            }
+        }
+    }
+    
     bool GetGroundedEndPosition(out Vector3 position, out Vector3 normal)
     {
         Vector3 homeDir;
