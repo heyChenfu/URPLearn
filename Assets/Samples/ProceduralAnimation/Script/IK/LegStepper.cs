@@ -110,9 +110,8 @@ public class LegStepper : MonoBehaviour
         // Apply the overshoot
         Vector3 endPoint = homeTransform.position + overshootVector;
 
-        // We want to pass through the center point
+        // 计算中间点并将中间点抬起
         Vector3 centerPoint = (startPoint + endPoint) / 2;
-        // But also lift off, so we move it up by half the step distance (arbitrarily)
         centerPoint += homeTransform.up * Vector3.Distance(startPoint, endPoint) * 2 / 3;
 
         float timeElapsed = 0;

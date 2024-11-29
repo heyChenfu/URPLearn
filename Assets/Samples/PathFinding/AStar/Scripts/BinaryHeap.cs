@@ -8,7 +8,7 @@ namespace Algorithm
     /// <summary>
     /// 二叉堆, 节点以树状结构排列，其中每个节点最多有两个子节点，并且树总是完整的，
     /// 这意味着树的所有级别都是完全填充的，除了最后一层可能是从左到右填充
-    /// 该二叉堆为最小堆
+    /// 该二叉堆为最小堆(最小堆的性质：对于每一个节点，其值都小于或等于其子节点的值。即父节点的值总是小于等于其左右子节点的值。这样保证了堆顶（根节点）是整个堆中的最小元素)
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class BinaryHeap<T> where T : IComparable
