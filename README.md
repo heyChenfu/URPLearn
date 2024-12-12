@@ -14,6 +14,9 @@ https://weaverdev.io/projects/bonehead-procedural-animation
 ## PathFinding
 几种寻路算法AStar,Dijkstra,VectorField的学习和实现
 
+## Planar Shadow
+![效果图](images/平面阴影.png)
+
 ## ComputeShader 
 使用ComputeShader简单输出颜色到一个RenderTexture上
 ## UVSequenceFrameAnimation

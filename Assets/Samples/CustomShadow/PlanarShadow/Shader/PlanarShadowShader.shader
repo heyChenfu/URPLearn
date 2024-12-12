@@ -90,12 +90,18 @@ Shader "Learn/PlanarShadow"
                 posWS += -L * d3;
                 posWS += N * 0.01;
 
+                // 顶点在影子下方的情况下，fade返回0
+                if (orgPosWS.y < posWS.y)
+                    return 0;
+                
                 // 计算顶点到阴影xz平面上的距离
                 float2 proj = float2(posWS.x - orgPosWS.x, posWS.z - orgPosWS.z);
                 float len = length(proj);
                 // 计算阴影淡出的程度
                 half fade = 1 - (len - _FadeStart) / (_FadeEnd - _FadeStart);
                 return clamp(fade, 0, 1);
+                //返回参数和阴影Alpha相乘,值越小阴影越淡
+                
             }
  
             Varyings vert(Attributes IN)
@@ -112,7 +118,6 @@ Shader "Learn/PlanarShadow"
             half4 frag(Varyings IN) : SV_Target
             {
                 return half4(_ShadowColor.xyz, _ShadowColor.a * IN.fade);
-                //return half4(IN.fade,IN.fade,IN.fade,IN.fade);
             }
             ENDHLSL
         }
